@@ -8,6 +8,7 @@
   var form = cartPage.querySelector('[data-cart-form]');
   var status = cartPage.querySelector('[data-cart-status]');
   var cartError = cartPage.querySelector('[data-cart-error]');
+  var checkoutButton = cartPage.querySelector('[data-cart-checkout]');
   var cartChangeUrl = cartPage.dataset.cartChangeUrl || '/cart/change';
   var currency = cartPage.dataset.cartCurrency || 'USD';
   var locale = document.documentElement.lang || 'en';
@@ -53,10 +54,111 @@
     }
   }
 
+  function trackOutOfStockAttempt(line, reason, requestedQuantity) {
+    var input = line ? line.querySelector('[data-cart-quantity-input]') : null;
+    var stockLimit = line ? line.dataset.cartStockLimit : null;
+
+    if (!window.themeAnalytics || typeof window.themeAnalytics.trackOutOfStockAttempted !== 'function') {
+      return;
+    }
+
+    window.themeAnalytics.trackOutOfStockAttempted({
+      reason: reason,
+      productId: line ? line.dataset.productId : null,
+      variantId: line ? line.dataset.variantId : null,
+      requestedQuantity: requestedQuantity || (input ? input.value : null),
+      availableQuantity: stockLimit
+    });
+  }
+
+  function applyLineStockMetadata() {
+    form.querySelectorAll('[data-cart-line-stock]').forEach(function (metadata) {
+      var matchingLine = null;
+
+      form.querySelectorAll('[data-cart-line]').forEach(function (line) {
+        if (!matchingLine && line.dataset.lineKey === metadata.dataset.lineKey) {
+          matchingLine = line;
+        }
+      });
+
+      if (!matchingLine) {
+        return;
+      }
+
+      if (metadata.dataset.productId) {
+        matchingLine.dataset.productId = metadata.dataset.productId;
+      }
+
+      if (metadata.dataset.variantId) {
+        matchingLine.dataset.variantId = metadata.dataset.variantId;
+      }
+
+      if (metadata.dataset.cartStockLimit !== undefined) {
+        matchingLine.dataset.cartStockLimit = metadata.dataset.cartStockLimit;
+      }
+
+      if (metadata.dataset.cartLineUnavailable === 'true') {
+        matchingLine.dataset.cartLineUnavailable = 'true';
+        matchingLine.classList.add('cart-line-item--unavailable');
+
+        matchingLine.querySelectorAll('[data-cart-quantity-decrease], [data-cart-quantity-input], [data-cart-quantity-increase]').forEach(function (control) {
+          control.disabled = true;
+        });
+      }
+    });
+  }
+
+  function getLineAvailabilityError(line) {
+    var input = line.querySelector('[data-cart-quantity-input]');
+    var stockLimit = line.dataset.cartStockLimit;
+
+    if (line.dataset.cartLineUnavailable === 'true') {
+      return {
+        message: 'This item is no longer available. Remove it from your cart before checkout.',
+        reason: 'variant_unavailable',
+        requestedQuantity: input ? input.value : null
+      };
+    }
+
+    if (input && stockLimit !== undefined && stockLimit !== '' && Number(input.value) > Number(stockLimit)) {
+      return {
+        message: 'Only ' + stockLimit + ' available for this item. Update the quantity before checkout.',
+        reason: 'stock_limit_exceeded',
+        requestedQuantity: input.value
+      };
+    }
+
+    return null;
+  }
+
+  function refreshCheckoutState() {
+    var blockedLine = null;
+
+    form.querySelectorAll('[data-cart-line]').forEach(function (line) {
+      if (!blockedLine && getLineAvailabilityError(line)) {
+        blockedLine = line;
+      }
+    });
+
+    if (checkoutButton) {
+      checkoutButton.disabled = Boolean(blockedLine);
+      checkoutButton.setAttribute('aria-disabled', blockedLine ? 'true' : 'false');
+    }
+
+    if (blockedLine) {
+      var availabilityError = getLineAvailabilityError(blockedLine);
+      showCartError(availabilityError.message);
+      return availabilityError;
+    }
+
+    return null;
+  }
+
   function clearErrors() {
     showCartError('');
     form.querySelectorAll('[data-cart-line]').forEach(function (line) {
-      showLineError(line, '');
+      var availabilityError = getLineAvailabilityError(line);
+      showLineError(line, availabilityError ? availabilityError.message : '');
     });
   }
 
@@ -99,6 +201,7 @@
 
     if (input) {
       input.value = item.quantity;
+      input.setAttribute('aria-invalid', 'false');
     }
 
     if (originalTotal) {
@@ -183,12 +286,26 @@
         if (quantity === 0 || !matchingItem) {
           line.remove();
           updateCartSummary(cart);
+          if (!refreshCheckoutState()) {
+            showCartError('');
+          }
           showStatus('Item removed.');
           return;
         }
 
         updateLineDisplay(line, matchingItem);
         updateCartSummary(cart);
+        refreshCheckoutState();
+
+        if (matchingItem.quantity !== quantity) {
+          var correctionMessage = 'Shopify adjusted this item to ' + matchingItem.quantity + ' available.';
+          showLineError(line, correctionMessage);
+          showCartError(correctionMessage);
+          trackOutOfStockAttempt(line, 'platform_quantity_corrected', quantity);
+          showStatus('');
+          return;
+        }
+
         showStatus('Cart updated.');
       })
       .catch(function (error) {
@@ -199,10 +316,12 @@
         var message = error.description || error.message || 'We could not update this item. Check the quantity and try again.';
         showLineError(line, message);
         showCartError(message);
+        trackOutOfStockAttempt(line, 'platform_quantity_rejected', quantity);
         showStatus('');
       })
       .finally(function () {
         setLineBusy(line, false);
+        refreshCheckoutState();
         activeRequest = null;
       });
   }
@@ -238,7 +357,10 @@
     var requestedQuantity = getRequestedQuantity(input);
     if (requestedQuantity.error) {
       showLineError(line, requestedQuantity.error);
+      showCartError(requestedQuantity.error);
+      trackOutOfStockAttempt(line, 'stock_limit_exceeded', nextQuantity);
       input.value = currentQuantity;
+      refreshCheckoutState();
       return;
     }
 
@@ -257,6 +379,9 @@
 
     if (requestedQuantity.error) {
       showLineError(line, requestedQuantity.error);
+      showCartError(requestedQuantity.error);
+      trackOutOfStockAttempt(line, 'stock_limit_exceeded', input.value);
+      refreshCheckoutState();
       return;
     }
 
@@ -265,6 +390,8 @@
 
   form.addEventListener('submit', function (event) {
     var invalidInput = null;
+    var submitter = event.submitter || document.activeElement;
+    var isCheckoutAttempt = submitter && submitter.name === 'checkout';
 
     form.querySelectorAll('[data-cart-quantity-input]').forEach(function (input) {
       if (invalidInput) {
@@ -272,12 +399,19 @@
       }
 
       var line = input.closest('[data-cart-line]');
-      var requestedQuantity = getRequestedQuantity(input);
+      var availabilityError = isCheckoutAttempt ? getLineAvailabilityError(line) : null;
+      var requestedQuantity = availabilityError || getRequestedQuantity(input);
 
       if (requestedQuantity.error) {
         invalidInput = input;
         showLineError(line, requestedQuantity.error);
         showCartError(requestedQuantity.error);
+        trackOutOfStockAttempt(line, 'stock_limit_exceeded', input.value);
+      } else if (availabilityError) {
+        invalidInput = input;
+        showLineError(line, availabilityError.message);
+        showCartError(availabilityError.message);
+        trackOutOfStockAttempt(line, availabilityError.reason, availabilityError.requestedQuantity);
       }
     });
 
@@ -286,4 +420,8 @@
       invalidInput.focus();
     }
   });
+
+  applyLineStockMetadata();
+  clearErrors();
+  refreshCheckoutState();
 })();
