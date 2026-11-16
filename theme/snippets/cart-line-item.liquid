@@ -1,0 +1,89 @@
+{% liquid
+  assign selected_size = ''
+  assign selected_colour = ''
+
+  for option in line_item.options_with_values
+    assign option_name = option.name | downcase
+    if option_name == 'size'
+      assign selected_size = option.value
+    endif
+    if option_name == 'colour' or option_name == 'color'
+      assign selected_colour = option.value
+    endif
+  endfor
+
+  if selected_size == ''
+    assign selected_size = 'Not selected'
+  endif
+  if selected_colour == ''
+    assign selected_colour = 'Not selected'
+  endif
+
+  assign quantity_id = 'Quantity-' | append: line_item.key | handleize
+  assign image_alt = line_item.image.alt | default: line_item.product.title
+%}
+
+<article class="cart-line-item" role="listitem">
+  <div class="cart-line-item__media">
+    {% if line_item.image %}
+      {{ line_item.image | image_url: width: 240 | image_tag: widths: '120, 180, 240', sizes: '(min-width: 750px) 120px, 88px', loading: 'lazy', alt: image_alt }}
+    {% else %}
+      <div class="cart-line-item__placeholder" aria-hidden="true"></div>
+    {% endif %}
+  </div>
+
+  <div class="cart-line-item__details">
+    <h2 class="cart-line-item__title">
+      <a href="{{ line_item.url }}">{{ line_item.product.title | escape }}</a>
+    </h2>
+
+    <dl class="cart-line-item__options">
+      <div>
+        <dt>Size</dt>
+        <dd>{{ selected_size | escape }}</dd>
+      </div>
+      <div>
+        <dt>Colour</dt>
+        <dd>{{ selected_colour | escape }}</dd>
+      </div>
+    </dl>
+
+    {% unless line_item.product.has_only_default_variant %}
+      <p class="cart-line-item__variant">{{ line_item.variant.title | escape }}</p>
+    {% endunless %}
+  </div>
+
+  <div class="cart-line-item__quantity">
+    <label for="{{ quantity_id }}">Quantity</label>
+    <input
+      id="{{ quantity_id }}"
+      class="cart-line-item__quantity-input"
+      type="number"
+      name="updates[]"
+      value="{{ line_item.quantity }}"
+      min="0"
+      inputmode="numeric"
+      aria-label="Quantity for {{ line_item.product.title | escape }}"
+    >
+  </div>
+
+  <div class="cart-line-item__price">
+    <span class="cart-line-item__mobile-label">Item price</span>
+    {% if line_item.original_price != line_item.final_price %}
+      <s>{{ line_item.original_price | money }}</s>
+      <strong>{{ line_item.final_price | money }}</strong>
+    {% else %}
+      <strong>{{ line_item.final_price | money }}</strong>
+    {% endif %}
+  </div>
+
+  <div class="cart-line-item__line-total">
+    <span class="cart-line-item__mobile-label">Line total</span>
+    {% if line_item.original_line_price != line_item.final_line_price %}
+      <s>{{ line_item.original_line_price | money }}</s>
+      <strong>{{ line_item.final_line_price | money }}</strong>
+    {% else %}
+      <strong>{{ line_item.final_line_price | money }}</strong>
+    {% endif %}
+  </div>
+</article>
