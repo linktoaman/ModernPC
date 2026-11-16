@@ -1,0 +1,84 @@
+{% liquid
+  assign supported_handles = 'men,women,kids,accessories' | split: ','
+  assign collection_title = collection.title | default: 'Products'
+  assign products_per_page = section.settings.products_per_page | default: 24
+%}
+
+<section class="collection-page" data-section-id="{{ section.id }}">
+  <div class="collection-page__inner">
+    <header class="collection-page__header">
+      <div>
+        <p class="collection-page__eyebrow">Collection</p>
+        <h1 class="collection-page__title">{{ collection_title | escape }}</h1>
+      </div>
+
+      <nav class="collection-page__categories" aria-label="Supported categories">
+        {% for handle in supported_handles %}
+          {% assign category_collection = collections[handle] %}
+          {% assign category_title = category_collection.title | default: handle | replace: '-', ' ' | capitalize %}
+          <a
+            href="/collections/{{ handle }}"
+            {% if collection.handle == handle %}
+              aria-current="page"
+            {% endif %}
+          >
+            {{ category_title | escape }}
+          </a>
+        {% endfor %}
+      </nav>
+    </header>
+
+    {% if collection.description != blank %}
+      <div class="collection-page__description">
+        {{ collection.description }}
+      </div>
+    {% endif %}
+
+    {% paginate collection.products by products_per_page %}
+      {% if collection.products_count > 0 %}
+        <div class="product-grid" role="list">
+          {% for product in collection.products %}
+            {% render 'product-card', product: product %}
+          {% endfor %}
+        </div>
+
+        {% if paginate.pages > 1 %}
+          <nav class="collection-pagination" aria-label="Collection pages">
+            {% if paginate.previous %}
+              <a href="{{ paginate.previous.url }}">Previous</a>
+            {% endif %}
+            <span>Page {{ paginate.current_page }} of {{ paginate.pages }}</span>
+            {% if paginate.next %}
+              <a href="{{ paginate.next.url }}">Next</a>
+            {% endif %}
+          </nav>
+        {% endif %}
+      {% else %}
+        <div class="collection-empty" role="status">
+          <h2 class="collection-empty__title">No available products</h2>
+          <p class="collection-empty__message">
+            There are no products available in {{ collection_title | escape }} right now. Please check back soon.
+          </p>
+          <a class="collection-empty__link" href="{{ routes.all_products_collection_url }}">Browse all products</a>
+        </div>
+      {% endif %}
+    {% endpaginate %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Collection product grid",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    }
+  ]
+}
+{% endschema %}
