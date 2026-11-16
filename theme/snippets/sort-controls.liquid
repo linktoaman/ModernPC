@@ -1,0 +1,25 @@
+{% liquid
+  assign selected_sort = resource.sort_by | default: resource.default_sort_by
+  assign sort_label = label | default: 'Sort by'
+%}
+
+<div class="storefront-sort">
+  <label class="storefront-controls__label" for="{{ id_prefix }}-sort-by">{{ sort_label }}</label>
+  <select
+    class="storefront-controls__select"
+    id="{{ id_prefix }}-sort-by"
+    name="sort_by"
+    data-filter-input
+  >
+    {% for option in resource.sort_options %}
+      <option
+        value="{{ option.value | escape }}"
+        {% if option.value == selected_sort %}
+          selected
+        {% endif %}
+      >
+        {{ option.name | escape }}
+      </option>
+    {% endfor %}
+  </select>
+</div>

@@ -1,0 +1,125 @@
+{% liquid
+  assign form_id = id_prefix | append: '-filters'
+  assign resource_title = title | default: 'Products'
+  assign clear_filters_url = clear_url | default: action_url
+%}
+
+<form
+  class="storefront-controls"
+  id="{{ form_id }}"
+  action="{{ action_url }}"
+  method="get"
+  data-filter-form
+>
+  {% if context == 'search' %}
+    <input type="hidden" name="type" value="product">
+    <input type="hidden" name="q" value="{{ search.terms | escape }}">
+    <input type="hidden" name="options[prefix]" value="last">
+  {% endif %}
+
+  <div class="storefront-controls__header">
+    <div>
+      <p class="storefront-controls__eyebrow">Refine</p>
+      <h2 class="storefront-controls__title">{{ resource_title | escape }}</h2>
+    </div>
+    <a class="storefront-controls__clear" href="{{ clear_filters_url }}">Clear all</a>
+  </div>
+
+  <div class="storefront-controls__groups" data-facets>
+    {% if resource.filters.size > 0 %}
+      {% assign rendered_target_filters = 0 %}
+      {% for filter in resource.filters %}
+        {% liquid
+          assign filter_label = filter.label | downcase
+          assign is_target_filter = false
+          if filter.type == 'price_range'
+            assign is_target_filter = true
+          endif
+          if filter_label contains 'category' or filter_label contains 'product type' or filter_label contains 'type'
+            assign is_target_filter = true
+          endif
+          if filter_label contains 'size'
+            assign is_target_filter = true
+          endif
+          if filter_label contains 'colour' or filter_label contains 'color'
+            assign is_target_filter = true
+          endif
+        %}
+
+        {% if is_target_filter %}
+          {% assign rendered_target_filters = rendered_target_filters | plus: 1 %}
+          <fieldset class="storefront-facet">
+            <legend class="storefront-facet__legend">{{ filter.label | escape }}</legend>
+
+            {% case filter.type %}
+              {% when 'boolean', 'list' %}
+                <div class="storefront-facet__options">
+                  {% for value in filter.values %}
+                    <label class="storefront-facet__option {% if value.count == 0 and value.active == false %}storefront-facet__option--disabled{% endif %}">
+                      <input
+                        type="checkbox"
+                        name="{{ value.param_name }}"
+                        value="{{ value.value | escape }}"
+                        {% if value.active %}
+                          checked
+                        {% endif %}
+                        {% if value.count == 0 and value.active == false %}
+                          disabled
+                        {% endif %}
+                        data-filter-input
+                      >
+                      <span>{{ value.label | escape }}</span>
+                      <span class="storefront-facet__count">{{ value.count }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+
+              {% when 'price_range' %}
+                <div class="storefront-facet__price">
+                  <label>
+                    <span>Min</span>
+                    <input
+                      type="number"
+                      inputmode="decimal"
+                      min="0"
+                      name="{{ filter.min_value.param_name }}"
+                      value="{% if filter.min_value.value %}{{ filter.min_value.value | money_without_currency | replace: ',', '' }}{% endif %}"
+                      placeholder="0"
+                      data-filter-input
+                    >
+                  </label>
+                  <label>
+                    <span>Max</span>
+                    <input
+                      type="number"
+                      inputmode="decimal"
+                      min="0"
+                      name="{{ filter.max_value.param_name }}"
+                      value="{% if filter.max_value.value %}{{ filter.max_value.value | money_without_currency | replace: ',', '' }}{% endif %}"
+                      placeholder="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                      data-filter-input
+                    >
+                  </label>
+                </div>
+            {% endcase %}
+          </fieldset>
+        {% endif %}
+      {% endfor %}
+
+      {% if rendered_target_filters == 0 %}
+        <p class="storefront-controls__empty">
+          Category, size, colour, and price filters are ready to display after they are enabled in Shopify Search & Discovery.
+        </p>
+      {% endif %}
+    {% else %}
+      <p class="storefront-controls__empty">
+        Filters appear here after category, size, colour, and price filters are enabled in Shopify Search & Discovery.
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="storefront-controls__footer">
+    {% render 'sort-controls', resource: resource, id_prefix: id_prefix %}
+    <button class="storefront-controls__apply" type="submit">Apply</button>
+  </div>
+</form>
