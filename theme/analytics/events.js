@@ -14,6 +14,19 @@
     return typeof value === 'string' && value.trim() ? value.trim() : undefined;
   }
 
+  function toStockAttemptReason(value) {
+    var reason = toText(value);
+    var allowedReasons = [
+      'variant_unavailable',
+      'variant_not_found',
+      'stock_limit_exceeded',
+      'line_unavailable',
+      'unknown'
+    ];
+
+    return allowedReasons.indexOf(reason) >= 0 ? reason : 'unknown';
+  }
+
   function removeEmptyValues(payload) {
     Object.keys(payload).forEach(function (key) {
       if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
@@ -49,7 +62,7 @@
     }
 
     if (eventName === eventNames.outOfStockAttempted) {
-      compacted.reason = toText(payload.reason) || 'unknown';
+      compacted.reason = toStockAttemptReason(payload.reason);
       compacted.variant_id = toPositiveNumber(payload.variantId);
       compacted.product_id = toPositiveNumber(payload.productId);
       compacted.requested_quantity = toPositiveNumber(payload.requestedQuantity);
