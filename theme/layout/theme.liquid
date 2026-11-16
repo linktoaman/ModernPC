@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code | default: 'en' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+      {{ page_title | escape }}
+      {% if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' | escape }}"{% endif %}
+      {% if current_page != 1 %} &ndash; Page {{ current_page }}{% endif %}
+      {% unless page_title contains shop.name %} &ndash; {{ shop.name | escape }}{% endunless %}
+    </title>
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+    {{ content_for_header }}
+  </head>
+
+  <body>
+    <a class="skip-link" href="#MainContent">Skip to content</a>
+
+    <header class="site-header" role="banner">
+      <div class="site-header__inner">
+        <a class="site-header__brand" href="{{ routes.root_url }}">{{ shop.name | default: 'AXIS Clothing' | escape }}</a>
+        <nav class="site-header__nav" aria-label="Product categories">
+          <a href="/collections/men">Men</a>
+          <a href="/collections/women">Women</a>
+          <a href="/collections/kids">Kids</a>
+          <a href="/collections/accessories">Accessories</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="MainContent" tabindex="-1">
+      {{ content_for_layout }}
+    </main>
+  </body>
+</html>

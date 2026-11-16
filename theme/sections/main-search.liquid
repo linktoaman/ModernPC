@@ -1,0 +1,112 @@
+{% liquid
+  assign products_per_page = section.settings.products_per_page | default: 24
+  assign search_terms = search.terms | default: ''
+%}
+
+<section class="collection-page search-page" data-section-id="{{ section.id }}">
+  <div class="collection-page__inner">
+    <header class="collection-page__header">
+      <div>
+        <p class="collection-page__eyebrow">Search</p>
+        <h1 class="collection-page__title">Search products</h1>
+      </div>
+    </header>
+
+    <form class="search-page__form" action="{{ routes.search_url }}" method="get" role="search">
+      <input type="hidden" name="type" value="product">
+      <input type="hidden" name="options[prefix]" value="last">
+      <label class="visually-hidden" for="SearchInput-{{ section.id }}">Search products</label>
+      <input
+        class="search-page__input"
+        id="SearchInput-{{ section.id }}"
+        type="search"
+        name="q"
+        value="{{ search_terms | escape }}"
+        placeholder="Search apparel"
+        autocomplete="off"
+      >
+      <button class="search-page__submit" type="submit">Search</button>
+    </form>
+
+    {% if search.performed %}
+      <p class="search-page__summary" role="status">
+        {% if search.results_count == 1 %}
+          1 product result for "{{ search_terms | escape }}"
+        {% else %}
+          {{ search.results_count }} product results for "{{ search_terms | escape }}"
+        {% endif %}
+      </p>
+
+      <div class="storefront-layout">
+        <aside class="storefront-layout__sidebar" aria-label="Search filters">
+          {% render 'facets',
+            resource: search,
+            title: 'Search results',
+            action_url: routes.search_url,
+            context: 'search',
+            id_prefix: 'search'
+          %}
+        </aside>
+
+        <div class="storefront-layout__results" data-search-results aria-live="polite" aria-busy="false" tabindex="-1">
+          {% paginate search.results by products_per_page %}
+            {% assign product_results = search.results | where: 'object_type', 'product' %}
+            {% if product_results.size > 0 %}
+              <div class="product-grid" role="list">
+                {% for item in search.results %}
+                  {% if item.object_type == 'product' %}
+                    {% render 'product-card', product: item %}
+                  {% endif %}
+                {% endfor %}
+              </div>
+
+              {% if paginate.pages > 1 %}
+                <nav class="collection-pagination" aria-label="Search result pages">
+                  {% if paginate.previous %}
+                    <a href="{{ paginate.previous.url }}">Previous</a>
+                  {% endif %}
+                  <span>Page {{ paginate.current_page }} of {{ paginate.pages }}</span>
+                  {% if paginate.next %}
+                    <a href="{{ paginate.next.url }}">Next</a>
+                  {% endif %}
+                </nav>
+              {% endif %}
+            {% else %}
+              <div class="collection-empty" role="status">
+                <h2 class="collection-empty__title">No matching products</h2>
+                <p class="collection-empty__message">
+                  We could not find apparel matching "{{ search_terms | escape }}". Try another keyword or remove a filter.
+                </p>
+                <a class="collection-empty__link" href="{{ routes.all_products_collection_url }}">Browse all products</a>
+              </div>
+            {% endif %}
+          {% endpaginate %}
+        </div>
+      </div>
+    {% else %}
+      <div class="collection-empty" role="status">
+        <h2 class="collection-empty__title">Find your next piece</h2>
+        <p class="collection-empty__message">Search by product name, category, colour, or style.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{{ 'search-filters.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Search",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    }
+  ]
+}
+{% endschema %}

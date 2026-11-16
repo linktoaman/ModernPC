@@ -2,7 +2,8 @@
   var eventNames = {
     addToCart: 'add_to_cart',
     cartAbandoned: 'cart_abandoned',
-    outOfStockAttempted: 'out_of_stock_attempted'
+    outOfStockAttempted: 'out_of_stock_attempted',
+    productViewed: 'product_viewed'
   };
 
   function toPositiveNumber(value) {
@@ -12,6 +13,19 @@
 
   function toText(value) {
     return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  }
+
+  function toStockAttemptReason(value) {
+    var reason = toText(value);
+    var allowedReasons = [
+      'variant_unavailable',
+      'variant_not_found',
+      'stock_limit_exceeded',
+      'line_unavailable',
+      'unknown'
+    ];
+
+    return allowedReasons.indexOf(reason) >= 0 ? reason : 'unknown';
   }
 
   function removeEmptyValues(payload) {
@@ -49,11 +63,18 @@
     }
 
     if (eventName === eventNames.outOfStockAttempted) {
-      compacted.reason = toText(payload.reason) || 'unknown';
+      compacted.reason = toStockAttemptReason(payload.reason);
       compacted.variant_id = toPositiveNumber(payload.variantId);
       compacted.product_id = toPositiveNumber(payload.productId);
       compacted.requested_quantity = toPositiveNumber(payload.requestedQuantity);
       compacted.available_quantity = toPositiveNumber(payload.availableQuantity);
+    }
+
+    if (eventName === eventNames.productViewed) {
+      compacted.product_id = toPositiveNumber(payload.productId);
+      compacted.variant_id = toPositiveNumber(payload.variantId);
+      compacted.currency = toText(payload.currency);
+      compacted.source = toText(payload.source || 'product_detail');
     }
 
     return removeEmptyValues(compacted);
@@ -85,5 +106,9 @@
 
   window.themeAnalytics.trackOutOfStockAttempted = function (payload) {
     return publish(eventNames.outOfStockAttempted, payload);
+  };
+
+  window.themeAnalytics.trackProductViewed = function (payload) {
+    return publish(eventNames.productViewed, payload);
   };
 })();
