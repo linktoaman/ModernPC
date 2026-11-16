@@ -20,10 +20,18 @@
   endif
 
   assign quantity_id = 'Quantity-' | append: line_item.key | handleize
+  assign error_id = 'QuantityError-' | append: line_item.key | handleize
   assign image_alt = line_item.image.alt | default: line_item.product.title
+  assign quantity_min = line_item.variant.quantity_rule.min | default: 1
+  assign quantity_step = line_item.variant.quantity_rule.increment | default: 1
+  assign quantity_max = line_item.variant.quantity_rule.max
+
+  if quantity_max == blank and line_item.variant.inventory_management and line_item.variant.inventory_policy == 'deny'
+    assign quantity_max = line_item.variant.inventory_quantity
+  endif
 %}
 
-<article class="cart-line-item" role="listitem">
+<article class="cart-line-item" role="listitem" data-cart-line data-line-key="{{ line_item.key }}">
   <div class="cart-line-item__media">
     {% if line_item.image %}
       {{ line_item.image | image_url: width: 240 | image_tag: widths: '120, 180, 240', sizes: '(min-width: 750px) 120px, 88px', loading: 'lazy', alt: image_alt }}
@@ -55,16 +63,49 @@
 
   <div class="cart-line-item__quantity">
     <label for="{{ quantity_id }}">Quantity</label>
-    <input
-      id="{{ quantity_id }}"
-      class="cart-line-item__quantity-input"
-      type="number"
-      name="updates[]"
-      value="{{ line_item.quantity }}"
-      min="0"
-      inputmode="numeric"
-      aria-label="Quantity for {{ line_item.product.title | escape }}"
+    <div class="cart-line-item__quantity-controls" data-quantity-controls>
+      <button
+        class="cart-line-item__quantity-button"
+        type="button"
+        data-cart-quantity-decrease
+        aria-label="Decrease quantity for {{ line_item.product.title | escape }}"
+      >
+        -
+      </button>
+      <input
+        id="{{ quantity_id }}"
+        class="cart-line-item__quantity-input"
+        type="number"
+        name="updates[]"
+        value="{{ line_item.quantity }}"
+        min="{{ quantity_min }}"
+        step="{{ quantity_step }}"
+        {% if quantity_max != blank and quantity_max > 0 %}
+          max="{{ quantity_max }}"
+        {% endif %}
+        inputmode="numeric"
+        aria-label="Quantity for {{ line_item.product.title | escape }}"
+        aria-describedby="{{ error_id }}"
+        data-cart-quantity-input
+      >
+      <button
+        class="cart-line-item__quantity-button"
+        type="button"
+        data-cart-quantity-increase
+        aria-label="Increase quantity for {{ line_item.product.title | escape }}"
+      >
+        +
+      </button>
+    </div>
+    <button
+      class="cart-line-item__remove"
+      type="button"
+      data-cart-remove
+      aria-label="Remove {{ line_item.product.title | escape }} from cart"
     >
+      Remove
+    </button>
+    <p class="cart-line-item__error" id="{{ error_id }}" hidden data-cart-line-error></p>
   </div>
 
   <div class="cart-line-item__price">
@@ -77,7 +118,7 @@
     {% endif %}
   </div>
 
-  <div class="cart-line-item__line-total">
+  <div class="cart-line-item__line-total" data-cart-line-total>
     <span class="cart-line-item__mobile-label">Line total</span>
     {% if line_item.original_line_price != line_item.final_line_price %}
       <s>{{ line_item.original_line_price | money }}</s>
