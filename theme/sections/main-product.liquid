@@ -55,7 +55,12 @@
       </header>
 
       {% form 'product', product, class: 'product-form', data-product-form: '' %}
-        <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id>
+        <input
+          type="hidden"
+          name="id"
+          value="{% if product.has_only_default_variant %}{{ current_variant.id }}{% endif %}"
+          data-variant-id
+        >
 
         {% render 'variant-selector', product: product, current_variant: current_variant %}
 
@@ -64,13 +69,13 @@
             class="product-form__submit"
             type="submit"
             name="add"
-            {% unless current_variant.available %}disabled{% endunless %}
+            {% unless product.has_only_default_variant and current_variant.available %}disabled{% endunless %}
             data-product-submit
           >
-            {% if current_variant.available %}
+            {% if product.has_only_default_variant and current_variant.available %}
               Add to cart
             {% else %}
-              Sold out
+              Select options
             {% endif %}
           </button>
           <p class="product-form__status" role="status" aria-live="polite" data-product-status></p>

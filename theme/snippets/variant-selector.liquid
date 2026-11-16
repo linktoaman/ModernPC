@@ -3,10 +3,13 @@
     {% for option in product.options_with_values %}
       {% liquid
         assign option_index = option.position | minus: 1
-        assign selected_value = current_variant.options[option_index] | default: option.selected_value
       %}
 
-      <fieldset class="variant-selector__group" data-option-index="{{ option_index }}">
+      <fieldset
+        class="variant-selector__group"
+        data-option-index="{{ option_index }}"
+        data-option-name="{{ option.name | escape }}"
+      >
         <legend class="variant-selector__legend">{{ option.name | escape }}</legend>
 
         <div class="variant-selector__choices">
@@ -33,7 +36,6 @@
                 type="radio"
                 name="option-{{ option_index }}"
                 value="{{ value | escape }}"
-                {% if selected_value == value %}checked{% endif %}
                 {% unless value_available %}aria-disabled="true"{% endunless %}
               >
               <span class="variant-selector__label-text">{{ value | escape }}</span>
