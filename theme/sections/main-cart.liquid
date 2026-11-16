@@ -1,11 +1,20 @@
 {{ 'theme.css' | asset_url | stylesheet_tag }}
 
-<section class="cart-page" data-section-id="{{ section.id }}">
+<script src="{{ 'cart.js' | asset_url }}" defer></script>
+
+<section
+  class="cart-page"
+  data-cart-page
+  data-section-id="{{ section.id }}"
+  data-cart-url="{{ routes.cart_url }}"
+  data-cart-change-url="{{ routes.cart_change_url | default: '/cart/change' }}"
+  data-cart-currency="{{ cart.currency.iso_code | default: shop.currency }}"
+>
   <div class="cart-page__inner">
     <header class="cart-page__header">
       <h1 class="cart-page__title">Your cart</h1>
       {% if cart.item_count > 0 %}
-        <p class="cart-page__count">
+        <p class="cart-page__count" data-cart-count>
           {{ cart.item_count }}
           {% if cart.item_count == 1 %}
             item
@@ -23,7 +32,10 @@
         <a class="cart-empty__link" href="{{ routes.all_products_collection_url }}">Continue shopping</a>
       </div>
     {% else %}
-      <form class="cart-form" action="{{ routes.cart_url }}" method="post" novalidate>
+      <form class="cart-form" action="{{ routes.cart_url }}" method="post" novalidate data-cart-form>
+        <div class="cart-form__status" role="status" aria-live="polite" data-cart-status></div>
+        <div class="cart-form__error" role="alert" hidden data-cart-error></div>
+
         <div class="cart-items" role="list">
           <div class="cart-items__head" aria-hidden="true">
             <span class="cart-items__head-product">Product</span>
@@ -40,19 +52,19 @@
         <footer class="cart-summary" aria-label="Cart totals">
           <div class="cart-summary__row">
             <span>Subtotal</span>
-            <strong>{{ cart.items_subtotal_price | money }}</strong>
+            <strong data-cart-subtotal>{{ cart.items_subtotal_price | money }}</strong>
           </div>
 
           {% if cart.total_discounts > 0 %}
             <div class="cart-summary__row cart-summary__row--discount">
               <span>Discounts</span>
-              <strong>-{{ cart.total_discounts | money }}</strong>
+              <strong data-cart-discounts>-{{ cart.total_discounts | money }}</strong>
             </div>
           {% endif %}
 
           <div class="cart-summary__row cart-summary__row--total">
             <span>Cart total</span>
-            <strong>{{ cart.total_price | money }}</strong>
+            <strong data-cart-total>{{ cart.total_price | money }}</strong>
           </div>
 
           <p class="cart-summary__note">Taxes and delivery are calculated at checkout.</p>

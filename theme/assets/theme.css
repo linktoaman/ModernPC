@@ -90,6 +90,25 @@
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
 }
 
+.cart-form__status,
+.cart-form__error {
+  grid-column: 1 / -1;
+}
+
+.cart-form__status {
+  color: #336b46;
+  font-size: 0.95rem;
+  min-height: 1.25rem;
+}
+
+.cart-form__error {
+  background: #fff1ee;
+  border: 1px solid #d35c45;
+  border-radius: 6px;
+  color: #8b2416;
+  padding: 12px 14px;
+}
+
 .cart-items {
   background: #ffffff;
   border: 1px solid #d6dde0;
@@ -208,6 +227,35 @@
   gap: 8px;
 }
 
+.cart-line-item__quantity-controls {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: 36px minmax(48px, 1fr) 36px;
+  width: 120px;
+}
+
+.cart-line-item__quantity-button,
+.cart-line-item__remove {
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.cart-line-item__quantity-button {
+  background: #f3f6f5;
+  border: 1px solid #bdb6aa;
+  font-weight: 700;
+  min-height: 44px;
+}
+
+.cart-line-item__quantity-button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.cart-line-item__quantity-button:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
 .cart-line-item__quantity label,
 .cart-line-item__mobile-label {
   color: #5f625e;
@@ -226,6 +274,44 @@
   min-height: 44px;
   padding: 0 10px;
   width: 88px;
+}
+
+.cart-line-item__quantity-controls .cart-line-item__quantity-input {
+  border-left: 0;
+  border-radius: 0;
+  border-right: 0;
+  text-align: center;
+  width: 100%;
+}
+
+.cart-line-item__quantity-input[aria-invalid="true"] {
+  border-color: #d35c45;
+}
+
+.cart-line-item__remove {
+  background: transparent;
+  border: 0;
+  color: #8b2416;
+  justify-self: start;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cart-line-item__error {
+  color: #8b2416;
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.cart-line-item--updating {
+  opacity: 0.72;
+}
+
+.cart-line-item__quantity-button:disabled,
+.cart-line-item__quantity-input:disabled,
+.cart-line-item__remove:disabled {
+  cursor: progress;
 }
 
 .cart-line-item__price,
@@ -341,6 +427,11 @@
   }
 
   .cart-line-item__quantity-input {
+    width: 100%;
+  }
+
+  .cart-line-item__quantity-controls {
+    max-width: 180px;
     width: 100%;
   }
 
