@@ -1,0 +1,75 @@
+{{ 'theme.css' | asset_url | stylesheet_tag }}
+
+<section class="cart-page" data-section-id="{{ section.id }}">
+  <div class="cart-page__inner">
+    <header class="cart-page__header">
+      <h1 class="cart-page__title">Your cart</h1>
+      {% if cart.item_count > 0 %}
+        <p class="cart-page__count">
+          {{ cart.item_count }}
+          {% if cart.item_count == 1 %}
+            item
+          {% else %}
+            items
+          {% endif %}
+        </p>
+      {% endif %}
+    </header>
+
+    {% if cart.item_count == 0 %}
+      <div class="cart-empty" role="status">
+        <h2 class="cart-empty__title">Your cart is empty</h2>
+        <p class="cart-empty__message">Add products to your cart and they will appear here before checkout.</p>
+        <a class="cart-empty__link" href="{{ routes.all_products_collection_url }}">Continue shopping</a>
+      </div>
+    {% else %}
+      <form class="cart-form" action="{{ routes.cart_url }}" method="post" novalidate>
+        <div class="cart-items" role="list">
+          <div class="cart-items__head" aria-hidden="true">
+            <span class="cart-items__head-product">Product</span>
+            <span>Quantity</span>
+            <span class="cart-items__head-price">Item price</span>
+            <span class="cart-items__head-total">Line total</span>
+          </div>
+
+          {% for line_item in cart.items %}
+            {% render 'cart-line-item', line_item: line_item %}
+          {% endfor %}
+        </div>
+
+        <footer class="cart-summary" aria-label="Cart totals">
+          <div class="cart-summary__row">
+            <span>Subtotal</span>
+            <strong>{{ cart.items_subtotal_price | money }}</strong>
+          </div>
+
+          {% if cart.total_discounts > 0 %}
+            <div class="cart-summary__row cart-summary__row--discount">
+              <span>Discounts</span>
+              <strong>-{{ cart.total_discounts | money }}</strong>
+            </div>
+          {% endif %}
+
+          <div class="cart-summary__row cart-summary__row--total">
+            <span>Cart total</span>
+            <strong>{{ cart.total_price | money }}</strong>
+          </div>
+
+          <p class="cart-summary__note">Taxes and delivery are calculated at checkout.</p>
+
+          <div class="cart-summary__actions">
+            <button class="cart-summary__update" type="submit" name="update">Update cart</button>
+            <button class="cart-summary__checkout" type="submit" name="checkout">Checkout</button>
+          </div>
+        </footer>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main cart",
+  "settings": []
+}
+{% endschema %}
