@@ -1,0 +1,55 @@
+{% if product.has_only_default_variant == false %}
+  <div class="variant-selector" data-variant-selector>
+    {% for option in product.options_with_values %}
+      {% liquid
+        assign option_index = option.position | minus: 1
+        assign selected_value = current_variant.options[option_index] | default: option.selected_value
+      %}
+
+      <fieldset class="variant-selector__group" data-option-index="{{ option_index }}">
+        <legend class="variant-selector__legend">{{ option.name | escape }}</legend>
+
+        <div class="variant-selector__choices">
+          {% for value in option.values %}
+            {% liquid
+              assign value_available = false
+
+              for variant in product.variants
+                if variant.available and variant.options[option_index] == value
+                  assign value_available = true
+                  break
+                endif
+              endfor
+            %}
+
+            <label
+              class="variant-selector__choice {% unless value_available %}variant-selector__choice--unavailable{% endunless %}"
+              data-variant-option
+              data-option-index="{{ option_index }}"
+              data-option-value="{{ value | escape }}"
+            >
+              <input
+                class="variant-selector__input visually-hidden"
+                type="radio"
+                name="option-{{ option_index }}"
+                value="{{ value | escape }}"
+                {% if selected_value == value %}checked{% endif %}
+                {% unless value_available %}aria-disabled="true"{% endunless %}
+              >
+              <span class="variant-selector__label-text">{{ value | escape }}</span>
+              <span class="variant-selector__state" data-variant-option-state>
+                {% if value_available %}
+                  Available
+                {% else %}
+                  Unavailable
+                {% endif %}
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="variant-selector__single-option">One size / colour option available.</p>
+{% endif %}

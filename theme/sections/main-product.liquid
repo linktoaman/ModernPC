@@ -1,0 +1,120 @@
+{{ 'theme.css' | asset_url | stylesheet_tag }}
+
+<script src="{{ 'analytics/events.js' | asset_url }}" defer></script>
+<script src="{{ 'product.js' | asset_url }}" defer></script>
+
+{% liquid
+  assign current_variant = product.selected_or_first_available_variant | default: product.variants.first
+  assign material = product.metafields.custom.material | default: product.metafields.product_details.material
+  assign care = product.metafields.custom.care | default: product.metafields.custom.care_instructions | default: product.metafields.product_details.care | default: product.metafields.product_details.care_instructions
+%}
+
+<section
+  class="product-page"
+  data-product-page
+  data-section-id="{{ section.id }}"
+  data-product-id="{{ product.id }}"
+  data-product-title="{{ product.title | escape }}"
+  data-product-currency="{{ cart.currency.iso_code | default: shop.currency }}"
+>
+  <div class="product-page__inner">
+    <div class="product-page__media">
+      {% render 'product-media-gallery', product: product %}
+    </div>
+
+    <div class="product-page__details">
+      <nav class="product-page__breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ routes.all_products_collection_url }}">Products</a>
+      </nav>
+
+      <header class="product-page__header">
+        <p class="product-page__eyebrow">Product</p>
+        <h1 class="product-page__title">{{ product.title | escape }}</h1>
+
+        <div class="product-page__price" data-product-price>
+          {% if current_variant.compare_at_price > current_variant.price %}
+            <s data-product-compare-price>{{ current_variant.compare_at_price | money }}</s>
+          {% else %}
+            <s data-product-compare-price hidden></s>
+          {% endif %}
+          <span data-product-current-price>{{ current_variant.price | money }}</span>
+        </div>
+
+        <p
+          class="product-page__availability {% unless current_variant.available %}product-page__availability--sold-out{% endunless %}"
+          data-product-availability
+          role="status"
+          aria-live="polite"
+        >
+          {% if current_variant.available %}
+            In stock
+          {% else %}
+            Sold out
+          {% endif %}
+        </p>
+      </header>
+
+      {% form 'product', product, class: 'product-form', data-product-form: '' %}
+        <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id>
+
+        {% render 'variant-selector', product: product, current_variant: current_variant %}
+
+        <div class="product-form__actions">
+          <button
+            class="product-form__submit"
+            type="submit"
+            name="add"
+            {% unless current_variant.available %}disabled{% endunless %}
+            data-product-submit
+          >
+            {% if current_variant.available %}
+              Add to cart
+            {% else %}
+              Sold out
+            {% endif %}
+          </button>
+          <p class="product-form__status" role="status" aria-live="polite" data-product-status></p>
+        </div>
+      {% endform %}
+
+      <div class="product-page__description">
+        <h2>Description</h2>
+        <div>{{ product.description }}</div>
+      </div>
+
+      <dl class="product-page__details-list">
+        <div>
+          <dt>Material</dt>
+          <dd>
+            {% if material != blank %}
+              {{ material | metafield_tag }}
+            {% else %}
+              Product material information will be provided by store staff.
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>Care</dt>
+          <dd>
+            {% if care != blank %}
+              {{ care | metafield_tag }}
+            {% else %}
+              Care instructions will be provided by store staff.
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <script type="application/json" data-product-variants>
+    {{ product.variants | json }}
+  </script>
+</section>
+
+{% schema %}
+{
+  "name": "Main product",
+  "settings": []
+}
+{% endschema %}
