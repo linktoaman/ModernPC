@@ -7,6 +7,28 @@
 - Theme events dispatch a browser `CustomEvent` and push the same compact payload to `window.dataLayer` only when a data layer is present.
 - Numeric IDs and quantities are allowed because they describe catalog and cart state, not customer identity.
 
+## Event: `product_viewed`
+
+Purpose: measure product detail engagement for discovery and merchandising KPI coverage.
+
+Emission point: product detail views should emit one event after the product page script initializes and product catalog metadata is available. Theme code can call `window.themeAnalytics.trackProductViewed(...)`; existing product detail initialization may dispatch the same compact event directly when the shared helper is unavailable.
+
+Payload:
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `event` | string | Yes | Always `product_viewed`. |
+| `product_id` | number | No | Shopify product ID when available. |
+| `variant_id` | number | No | Initially selected Shopify variant ID when available. |
+| `currency` | string | No | Active cart/store currency code when available. |
+| `source` | string | No | Low-cardinality source, defaults to `product_detail`. |
+
+Acceptance checks:
+
+- Product detail page initialization emits one `product_viewed` event with catalog IDs when available.
+- Payload contains no product title, URL, collection path, referrer, customer identifiers, contact data, cart token, checkout token, or payment data.
+- Event dispatch does not block product page rendering, variant selection, add-to-cart, checkout, payment, or admin operations.
+
 ## Event: `add_to_cart`
 
 Purpose: confirm product add flows create KPI coverage for customers adding merchandise to the Shopify cart.
