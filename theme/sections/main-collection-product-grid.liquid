@@ -34,37 +34,53 @@
       </div>
     {% endif %}
 
-    {% paginate collection.products by products_per_page %}
-      {% if collection.products_count > 0 %}
-        <div class="product-grid" role="list">
-          {% for product in collection.products %}
-            {% render 'product-card', product: product %}
-          {% endfor %}
-        </div>
+    <div class="storefront-layout">
+      <aside class="storefront-layout__sidebar" aria-label="Collection filters">
+        {% render 'facets',
+          resource: collection,
+          title: collection_title,
+          action_url: collection.url,
+          context: 'collection',
+          id_prefix: 'collection'
+        %}
+      </aside>
 
-        {% if paginate.pages > 1 %}
-          <nav class="collection-pagination" aria-label="Collection pages">
-            {% if paginate.previous %}
-              <a href="{{ paginate.previous.url }}">Previous</a>
+      <div class="storefront-layout__results" data-search-results aria-live="polite" aria-busy="false" tabindex="-1">
+        {% paginate collection.products by products_per_page %}
+          {% if collection.products.size > 0 %}
+            <div class="product-grid" role="list">
+              {% for product in collection.products %}
+                {% render 'product-card', product: product %}
+              {% endfor %}
+            </div>
+
+            {% if paginate.pages > 1 %}
+              <nav class="collection-pagination" aria-label="Collection pages">
+                {% if paginate.previous %}
+                  <a href="{{ paginate.previous.url }}">Previous</a>
+                {% endif %}
+                <span>Page {{ paginate.current_page }} of {{ paginate.pages }}</span>
+                {% if paginate.next %}
+                  <a href="{{ paginate.next.url }}">Next</a>
+                {% endif %}
+              </nav>
             {% endif %}
-            <span>Page {{ paginate.current_page }} of {{ paginate.pages }}</span>
-            {% if paginate.next %}
-              <a href="{{ paginate.next.url }}">Next</a>
-            {% endif %}
-          </nav>
-        {% endif %}
-      {% else %}
-        <div class="collection-empty" role="status">
-          <h2 class="collection-empty__title">No available products</h2>
-          <p class="collection-empty__message">
-            There are no products available in {{ collection_title | escape }} right now. Please check back soon.
-          </p>
-          <a class="collection-empty__link" href="{{ routes.all_products_collection_url }}">Browse all products</a>
-        </div>
-      {% endif %}
-    {% endpaginate %}
+          {% else %}
+            <div class="collection-empty" role="status">
+              <h2 class="collection-empty__title">No matching products</h2>
+              <p class="collection-empty__message">
+                There are no products in {{ collection_title | escape }} matching the selected filters. Adjust the filters or clear them to keep browsing.
+              </p>
+              <a class="collection-empty__link" href="{{ collection.url }}">Clear filters</a>
+            </div>
+          {% endif %}
+        {% endpaginate %}
+      </div>
+    </div>
   </div>
 </section>
+
+{{ 'search-filters.js' | asset_url | script_tag }}
 
 {% schema %}
 {
