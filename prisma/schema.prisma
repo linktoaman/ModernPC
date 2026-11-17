@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppointmentStatus {
+  Booked
+  Rescheduled
+  Cancelled
+  Completed
+  NoShow      @map("No-show")
+
+  @@map("appointment_status")
+}
+
+enum NotificationChannel {
+  Email
+  Sms
+
+  @@map("notification_channel")
+}
+
+enum NotificationStatus {
+  Pending
+  Sent
+  Failed
+  Cancelled
+
+  @@map("notification_status")
+}
+
+model Appointment {
+  id                 String            @id @default(uuid()) @db.Uuid
+  doctorId           String            @db.Uuid
+  patientContactId   String            @db.Uuid
+  appointmentTypeId  String            @db.Uuid
+  startAt            DateTime          @db.Timestamptz(6)
+  endAt              DateTime          @db.Timestamptz(6)
+  status             AppointmentStatus @default(Booked)
+  statusChangedAt    DateTime?         @db.Timestamptz(6)
+  rescheduledFromId  String?           @db.Uuid
+  cancellationReason String?
+  completedAt        DateTime?         @db.Timestamptz(6)
+  noShowAt           DateTime?         @db.Timestamptz(6)
+  notes              String?
+  createdAt          DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(6)
+
+  appointmentType     AppointmentType @relation(fields: [appointmentTypeId], references: [id])
+  doctor              Doctor          @relation(fields: [doctorId], references: [id])
+  patientContact      PatientContact  @relation(fields: [patientContactId], references: [id])
+  rescheduledFrom     Appointment?    @relation("AppointmentReschedules", fields: [rescheduledFromId], references: [id])
+  rescheduledChildren Appointment[]   @relation("AppointmentReschedules")
+  notifications       Notification[]
+
+  @@index([doctorId, startAt])
+  @@index([patientContactId])
+  @@index([status])
+  @@map("appointments")
+}
+
+model PatientContact {
+  id          String    @id @default(uuid()) @db.Uuid
+  fullName    String
+  email       String?
+  phone       String?
+  dateOfBirth DateTime? @db.Date
+  timezone    String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  accessTokens  PatientAccessToken[]
+  appointments  Appointment[]
+  notifications Notification[]
+
+  @@index([email])
+  @@index([phone])
+  @@map("patient_contacts")
+}
+
+model Doctor {
+  id          String   @id @default(uuid()) @db.Uuid
+  displayName String
+  specialty   String?
+  timezone    String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  appointmentTypes    AppointmentType[]
+  appointments        Appointment[]
+  availability        AvailabilitySchedule[]
+  blockedTimes        BlockedTime[]
+  schedulingRules     SchedulingRule[]
+  staffUserReferences StaffUserReference[]
+
+  @@index([active])
+  @@map("doctors")
+}
+
+model AvailabilitySchedule {
+  id            String    @id @default(uuid()) @db.Uuid
+  doctorId      String    @db.Uuid
+  dayOfWeek     Int
+  startTime     DateTime  @db.Time(0)
+  endTime       DateTime  @db.Time(0)
+  timezone      String
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, dayOfWeek, active])
+  @@map("availability_schedules")
+}
+
+model BlockedTime {
+  id        String   @id @default(uuid()) @db.Uuid
+  doctorId  String   @db.Uuid
+  startAt   DateTime @db.Timestamptz(6)
+  endAt     DateTime @db.Timestamptz(6)
+  reason    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, startAt, endAt])
+  @@index([active])
+  @@map("blocked_times")
+}
+
+model AppointmentType {
+  id                  String   @id @default(uuid()) @db.Uuid
+  doctorId            String?  @db.Uuid
+  name                String
+  durationMinutes     Int
+  bufferBeforeMinutes Int      @default(0)
+  bufferAfterMinutes  Int      @default(0)
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
+
+  appointments    Appointment[]
+  doctor          Doctor?          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  schedulingRules SchedulingRule[]
+
+  @@index([doctorId, active])
+  @@map("appointment_types")
+}
+
+model SchedulingRule {
+  id                        String   @id @default(uuid()) @db.Uuid
+  doctorId                  String?  @db.Uuid
+  appointmentTypeId         String?  @db.Uuid
+  minNoticeMinutes          Int      @default(0)
+  maxAdvanceDays            Int      @default(90)
+  cancellationCutoffMinutes Int      @default(0)
+  active                    Boolean  @default(true)
+  createdAt                 DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt                 DateTime @updatedAt @db.Timestamptz(6)
+
+  appointmentType AppointmentType? @relation(fields: [appointmentTypeId], references: [id], onDelete: Cascade)
+  doctor          Doctor?          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, appointmentTypeId, active])
+  @@map("scheduling_rules")
+}
+
+model Notification {
+  id               String              @id @default(uuid()) @db.Uuid
+  appointmentId    String?             @db.Uuid
+  patientContactId String?             @db.Uuid
+  channel          NotificationChannel
+  status           NotificationStatus  @default(Pending)
+  recipient        String
+  templateKey      String
+  scheduledAt      DateTime?           @db.Timestamptz(6)
+  sentAt           DateTime?           @db.Timestamptz(6)
+  failureReason    String?
+  createdAt        DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime            @updatedAt @db.Timestamptz(6)
+
+  appointment    Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  patientContact PatientContact? @relation(fields: [patientContactId], references: [id], onDelete: SetNull)
+
+  @@index([appointmentId])
+  @@index([patientContactId])
+  @@index([status, scheduledAt])
+  @@map("notifications")
+}
+
+model PatientAccessToken {
+  id               String    @id @default(uuid()) @db.Uuid
+  patientContactId String    @db.Uuid
+  tokenHash        String    @unique
+  purpose          String
+  expiresAt        DateTime  @db.Timestamptz(6)
+  consumedAt       DateTime? @db.Timestamptz(6)
+  revokedAt        DateTime? @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+
+  patientContact PatientContact @relation(fields: [patientContactId], references: [id], onDelete: Cascade)
+
+  @@index([patientContactId])
+  @@index([expiresAt])
+  @@map("patient_access_tokens")
+}
+
+model StaffUserReference {
+  id             String   @id @default(uuid()) @db.Uuid
+  externalUserId String   @unique
+  email          String   @unique
+  displayName    String?
+  roles          String[]
+  active         Boolean  @default(true)
+  doctorId       String?  @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  auditLogs AuditLog[]
+  doctor    Doctor?    @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+
+  @@index([active])
+  @@map("staff_user_references")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorType   String
+  actorId     String?
+  staffUserId String?  @db.Uuid
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  occurredAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  staffUser StaffUserReference? @relation(fields: [staffUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([staffUserId])
+  @@index([occurredAt])
+  @@map("audit_logs")
+}
