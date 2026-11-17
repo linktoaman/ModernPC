@@ -5,7 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "lint": "eslint app src tests --max-warnings=0",
+    "test": "node --require ./scripts/test-preload.cjs --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
+    "security:audit": "npm audit --omit=dev --audit-level=${NPM_AUDIT_LEVEL:-critical}",
+    "secrets:scan": "node scripts/secret-scan.mjs",
+    "accessibility": "node scripts/accessibility-smoke.mjs",
+    "sbom": "bash scripts/generate-sbom.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:validate": "prisma validate"
@@ -14,14 +20,19 @@
     "@prisma/client": "6.19.3",
     "next": "^15.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "eslint": "^10.15.0",
     "prisma": "6.19.3",
-    "typescript": "^5.6.0"
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.73.0"
   },
   "engines": {
     "node": ">=20.0.0"
