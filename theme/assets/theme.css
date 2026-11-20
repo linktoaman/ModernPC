@@ -62,6 +62,180 @@
   text-underline-offset: 4px;
 }
 
+.login-page {
+  background:
+    radial-gradient(circle at top left, rgba(202, 24, 43, 0.16), transparent 34rem),
+    linear-gradient(135deg, #fff8f8 0%, #ffffff 42%, #fbe9e9 100%);
+  color: #241114;
+  min-height: calc(100vh - 69px);
+  padding: 40px 16px 56px;
+}
+
+.login-page__shell {
+  align-items: stretch;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 480px);
+  margin: 0 auto;
+  max-width: 1120px;
+  min-height: 620px;
+  width: 100%;
+}
+
+.login-page__context {
+  align-content: center;
+  background: #8f1021;
+  border-radius: 8px;
+  color: #ffffff;
+  display: grid;
+  gap: 18px;
+  overflow: hidden;
+  padding: 48px;
+  position: relative;
+}
+
+.login-page__context::after {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0 2px, transparent 2px 16px);
+  bottom: 0;
+  content: "";
+  height: 42%;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.login-page__context-kicker {
+  color: #ffd7dc;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.login-page__context-title {
+  font-size: 3rem;
+  line-height: 1.05;
+  margin: 0;
+  max-width: 480px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-page__context-copy {
+  color: #ffe9ec;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 560px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-card {
+  align-self: center;
+  background: #ffffff;
+  border: 1px solid #e7b8bf;
+  border-radius: 8px;
+  box-shadow: 0 22px 70px rgba(93, 11, 22, 0.18);
+  display: grid;
+  gap: 18px;
+  padding: 40px;
+}
+
+.login-card__brand {
+  align-items: center;
+  display: flex;
+  min-height: 68px;
+}
+
+.login-card__logo {
+  display: block;
+  height: auto;
+  max-height: 64px;
+  max-width: 160px;
+  object-fit: contain;
+  width: auto;
+}
+
+.login-card__logo--unconfigured {
+  background: linear-gradient(135deg, #c9182b 0%, #8f1021 100%);
+  border-radius: 8px;
+  height: 64px;
+  width: 120px;
+}
+
+.login-card__title {
+  color: #241114;
+  font-size: 2.25rem;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.login-card__intro,
+.login-card__scope-note {
+  color: #5a343a;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.login-card__status {
+  background: #fff7f7;
+  border: 1px solid #f0c9cf;
+  border-radius: 6px;
+  min-height: 44px;
+}
+
+.login-card__sso-button {
+  align-items: center;
+  background: #c9182b;
+  border: 1px solid #c9182b;
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 18px;
+  text-align: center;
+  text-decoration: none;
+  width: 100%;
+}
+
+.login-card__sso-button:hover {
+  background: #a81223;
+  border-color: #a81223;
+}
+
+.login-card__help-row {
+  display: flex;
+  justify-content: center;
+}
+
+.login-card__help-link {
+  color: #9d1022;
+  font-weight: 800;
+  min-height: 44px;
+  padding: 10px 4px;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.login-card__sso-button:focus-visible,
+.login-card__help-link:focus-visible {
+  outline: 3px solid #5f0712;
+  outline-offset: 3px;
+}
+
+.login-card__scope-note {
+  border-top: 1px solid #f0d8dc;
+  font-size: 0.92rem;
+  padding-top: 16px;
+}
+
 .collection-page {
   background: #f6f8f7;
   color: #1d1f21;
@@ -1213,6 +1387,21 @@
     grid-template-columns: 1fr;
   }
 
+  .login-page__shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .login-page__context {
+    display: none;
+  }
+
+  .login-card {
+    margin: 0 auto;
+    max-width: 520px;
+    width: 100%;
+  }
+
   .cart-form {
     grid-template-columns: 1fr;
   }
@@ -1235,13 +1424,22 @@
   }
 
   .collection-page,
-  .product-page {
+  .product-page,
+  .login-page {
     padding: 24px 12px 36px;
   }
 
   .collection-page__title,
   .product-page__title {
     font-size: 2.25rem;
+  }
+
+  .login-card {
+    padding: 28px 20px;
+  }
+
+  .login-card__title {
+    font-size: 1.9rem;
   }
 
   .product-page__inner {
