@@ -1,0 +1,423 @@
+{% liquid
+  assign product_vendor = product.vendor | default: product.brand | strip
+  assign product_category = product.metafields.catalogue.category | default: product.category | default: product.type | strip
+  assign product_status = product.metafields.catalogue.active_status | default: product.status | default: product.published_status | strip | downcase
+  assign stock_status = product.metafields.catalogue.stock_status | default: product.stock_status | strip
+  assign delivery_estimate = product.metafields.catalogue.delivery_estimate | default: product.delivery_estimate | default: section.settings.fallback_delivery_estimate
+  assign specifications = product.metafields.catalogue.specifications | default: product.specifications
+  assign short_description = product.metafields.catalogue.short_description | default: product.short_description
+  assign product_image = product.featured_media.preview_image | default: product.featured_image
+  assign image_alt = product_image.alt | default: product.title
+  assign current_variant = product.selected_or_first_available_variant | default: product.variants.first
+  assign cart_item_id = current_variant.id | default: product.id
+  assign allowed_category = false
+  assign product_is_active = false
+  assign customer_visible = false
+  assign can_add_to_cart = false
+  assign add_to_cart_explanation = section.settings.unavailable_message
+
+  if product_category == 'Dell Gaming PC' or product_category == 'Dell Gaming Laptop' or product_category == 'Dell Accessory'
+    assign allowed_category = true
+  endif
+
+  if product_status == 'active'
+    assign product_is_active = true
+  endif
+
+  if stock_status == blank
+    if product.available
+      assign stock_status = 'In Stock'
+    else
+      assign stock_status = 'Out of Stock'
+    endif
+  endif
+
+  if product_vendor == 'Dell' and allowed_category and product_is_active
+    assign customer_visible = true
+  endif
+
+  if customer_visible
+    assign add_to_cart_explanation = ''
+
+    if stock_status == 'In Stock' or stock_status == 'Low Stock'
+      if product.available
+        if current_variant == blank or current_variant.available
+          assign can_add_to_cart = true
+        else
+          assign add_to_cart_explanation = 'The selected configuration is unavailable.'
+        endif
+      else
+        assign add_to_cart_explanation = 'This Dell product is currently out of stock.'
+      endif
+    else
+      case stock_status
+        when 'Out of Stock'
+          assign add_to_cart_explanation = 'This Dell product is currently out of stock.'
+        when 'Preorder'
+          assign add_to_cart_explanation = 'Preorder purchasing is not enabled for this Dell product.'
+        when 'Backorder'
+          assign add_to_cart_explanation = 'Backorder purchasing is not enabled for this Dell product.'
+        else
+          assign add_to_cart_explanation = section.settings.unavailable_message
+      endcase
+    endif
+  endif
+%}
+
+<section class="dell-product-detail" data-dell-product-detail>
+  <div class="dell-product-detail__inner">
+    {% if customer_visible %}
+      <nav class="dell-product-detail__breadcrumb" aria-label="Breadcrumb">
+        {% case product_category %}
+          {% when 'Dell Gaming PC' %}
+            <a href="/category/gaming-desktops">Dell gaming PCs</a>
+          {% when 'Dell Gaming Laptop' %}
+            <a href="/category/gaming-laptops">Dell gaming laptops</a>
+          {% when 'Dell Accessory' %}
+            <a href="/category/gaming-accessories">Dell accessories</a>
+        {% endcase %}
+      </nav>
+
+      <div class="dell-product-detail__layout">
+        <div class="dell-product-detail__media">
+          {% if product_image %}
+            {{
+              product_image
+              | image_url: width: 1200
+              | image_tag:
+                widths: '360, 540, 720, 960, 1200',
+                sizes: '(min-width: 990px) 48vw, 100vw',
+                loading: 'eager',
+                alt: image_alt
+            }}
+          {% else %}
+            <div class="dell-product-detail__placeholder" role="img" aria-label="Dell product image placeholder">Dell</div>
+          {% endif %}
+        </div>
+
+        <div class="dell-product-detail__summary">
+          <p class="dell-product-detail__eyebrow">{{ product_category | escape }}</p>
+          <h1 class="dell-product-detail__title">{{ product.title | escape }}</h1>
+
+          <div class="dell-product-detail__commerce">
+            <p class="dell-product-detail__price">{{ product.price | money_with_currency }}</p>
+            <p class="dell-product-detail__stock{% unless can_add_to_cart %} dell-product-detail__stock--blocked{% endunless %}" role="status">
+              {{ stock_status | escape }}
+            </p>
+            <p class="dell-product-detail__delivery">{{ delivery_estimate | escape }}</p>
+          </div>
+
+          {% if short_description != blank %}
+            <p class="dell-product-detail__lede">{{ short_description | escape }}</p>
+          {% endif %}
+
+          <form class="dell-product-detail__form" action="/cart/add" method="post">
+            {% if cart_item_id %}
+              <input type="hidden" name="id" value="{{ cart_item_id }}">
+            {% endif %}
+            <button
+              class="dell-product-detail__submit"
+              type="submit"
+              name="add"
+              {% unless can_add_to_cart %}disabled aria-disabled="true"{% endunless %}
+            >
+              {% if can_add_to_cart %}
+                Add to cart
+              {% else %}
+                Unavailable
+              {% endif %}
+            </button>
+            {% unless can_add_to_cart %}
+              <p class="dell-product-detail__unavailable" role="status">{{ add_to_cart_explanation | escape }}</p>
+            {% endunless %}
+          </form>
+        </div>
+      </div>
+
+      <div class="dell-product-detail__content">
+        <section class="dell-product-detail__panel" aria-labelledby="dell-product-description">
+          <h2 id="dell-product-description">Description</h2>
+          {% if product.description != blank %}
+            <div class="dell-product-detail__richtext">{{ product.description }}</div>
+          {% elsif short_description != blank %}
+            <p>{{ short_description | escape }}</p>
+          {% else %}
+            <p>Customer-safe product description is pending.</p>
+          {% endif %}
+        </section>
+
+        <section class="dell-product-detail__panel" aria-labelledby="dell-product-specifications">
+          <h2 id="dell-product-specifications">Specifications</h2>
+          {% if specifications != blank %}
+            <div class="dell-product-detail__richtext">{{ specifications | newline_to_br }}</div>
+          {% else %}
+            <p>Detailed Dell specifications are pending.</p>
+          {% endif %}
+        </section>
+      </div>
+    {% else %}
+      <div class="dell-product-detail__unpublished" role="status">
+        <h1>Dell product unavailable</h1>
+        <p>This product is not available in the Dell launch catalogue.</p>
+        <a href="/category/gaming-desktops">Browse Dell products</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+  .dell-product-detail {
+    background: #f6f8f7;
+    color: #1d1f21;
+    min-height: 100vh;
+    overflow-x: clip;
+    padding: 28px 16px 56px;
+  }
+
+  .dell-product-detail__inner {
+    margin: 0 auto;
+    max-width: 1180px;
+    width: 100%;
+  }
+
+  .dell-product-detail__breadcrumb {
+    margin-bottom: 18px;
+  }
+
+  .dell-product-detail__breadcrumb a,
+  .dell-product-detail__unpublished a {
+    color: #0f5143;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .dell-product-detail__layout {
+    align-items: start;
+    display: grid;
+    gap: 28px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  }
+
+  .dell-product-detail__media {
+    align-items: center;
+    aspect-ratio: 4 / 3;
+    background: #e3e9e7;
+    border: 1px solid #d6dde0;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .dell-product-detail__media img,
+  .dell-product-detail__placeholder {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .dell-product-detail__placeholder {
+    align-content: center;
+    background: linear-gradient(135deg, #f1f4f3 0%, #d9e2df 100%);
+    color: #52615d;
+    font-size: 2rem;
+    font-weight: 900;
+    text-align: center;
+  }
+
+  .dell-product-detail__summary {
+    min-width: 0;
+  }
+
+  .dell-product-detail__eyebrow {
+    color: #5f625e;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+  }
+
+  .dell-product-detail__title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.05;
+    margin: 0 0 18px;
+  }
+
+  .dell-product-detail__commerce {
+    align-items: center;
+    border-bottom: 1px solid #d6dde0;
+    border-top: 1px solid #d6dde0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 16px 0;
+  }
+
+  .dell-product-detail__price {
+    font-size: 1.45rem;
+    font-weight: 900;
+    margin: 0;
+  }
+
+  .dell-product-detail__stock {
+    background: #e6f3eb;
+    border-radius: 999px;
+    color: #24643a;
+    font-size: 0.9rem;
+    font-weight: 800;
+    margin: 0;
+    padding: 6px 11px;
+  }
+
+  .dell-product-detail__stock--blocked {
+    background: #f8e9e5;
+    color: #8b2416;
+  }
+
+  .dell-product-detail__delivery {
+    color: #4d514c;
+    margin: 0;
+  }
+
+  .dell-product-detail__lede {
+    color: #353936;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    margin: 0 0 22px;
+  }
+
+  .dell-product-detail__form {
+    display: grid;
+    gap: 12px;
+    max-width: 360px;
+  }
+
+  .dell-product-detail__submit {
+    align-items: center;
+    background: #143d33;
+    border: 1px solid #143d33;
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 900;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 18px;
+  }
+
+  .dell-product-detail__submit:disabled {
+    background: #d6dde0;
+    border-color: #b9c3c0;
+    color: #5f625e;
+    cursor: not-allowed;
+  }
+
+  .dell-product-detail__submit:focus-visible {
+    outline: 3px solid #2b6659;
+    outline-offset: 3px;
+  }
+
+  .dell-product-detail__unavailable {
+    color: #8b2416;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .dell-product-detail__content {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    margin-top: 36px;
+  }
+
+  .dell-product-detail__panel {
+    border-top: 1px solid #d6dde0;
+    min-width: 0;
+    padding-top: 18px;
+  }
+
+  .dell-product-detail__panel h2 {
+    font-size: 1.3rem;
+    margin: 0 0 12px;
+  }
+
+  .dell-product-detail__panel p,
+  .dell-product-detail__richtext {
+    color: #353936;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .dell-product-detail__richtext ul,
+  .dell-product-detail__richtext ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .dell-product-detail__unpublished {
+    background: #ffffff;
+    border: 1px solid #d6dde0;
+    border-radius: 8px;
+    margin: 40px auto 0;
+    max-width: 620px;
+    padding: 28px;
+  }
+
+  .dell-product-detail__unpublished h1 {
+    font-size: 1.7rem;
+    margin: 0 0 10px;
+  }
+
+  .dell-product-detail__unpublished p {
+    color: #5f625e;
+    margin: 0 0 18px;
+  }
+
+  @media (max-width: 899px) {
+    .dell-product-detail__layout,
+    .dell-product-detail__content {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 599px) {
+    .dell-product-detail {
+      padding: 24px 12px 44px;
+    }
+
+    .dell-product-detail__commerce {
+      align-items: start;
+      display: grid;
+    }
+
+    .dell-product-detail__form {
+      max-width: none;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Dell product detail",
+  "settings": [
+    {
+      "type": "text",
+      "id": "fallback_delivery_estimate",
+      "label": "Fallback delivery estimate",
+      "default": "Delivery estimate pending"
+    },
+    {
+      "type": "text",
+      "id": "unavailable_message",
+      "label": "Unavailable message",
+      "default": "This Dell product is not available for cart purchase right now."
+    }
+  ]
+}
+{% endschema %}
