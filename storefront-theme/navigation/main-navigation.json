@@ -1,0 +1,20 @@
+{
+  "name": "Main navigation",
+  "items": [
+    {
+      "label": "Dell gaming PCs",
+      "url": "/category/gaming-desktops",
+      "category": "Dell Gaming PC"
+    },
+    {
+      "label": "Dell gaming laptops",
+      "url": "/category/gaming-laptops",
+      "category": "Dell Gaming Laptop"
+    },
+    {
+      "label": "Dell accessories",
+      "url": "/category/gaming-accessories",
+      "category": "Dell Accessory"
+    }
+  ]
+}
