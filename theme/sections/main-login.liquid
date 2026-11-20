@@ -1,8 +1,12 @@
-{% render 'login-configuration' %}
-
-<script src="{{ 'analytics/events.js' | asset_url }}" defer></script>
-
 {% liquid
+  assign login_page_title = settings.login_page_title | strip
+  assign login_logo = settings.login_logo
+  assign login_sso_provider_name = settings.login_sso_provider_name | strip
+  assign login_sso_redirect_url = settings.login_sso_redirect_url | strip
+  assign login_help_url = settings.login_help_url | strip
+  assign login_sso_redirect_url_prefix = login_sso_redirect_url | slice: 0, 8
+  assign login_help_url_prefix = login_help_url | slice: 0, 8
+
   assign login_title = login_page_title
   assign login_logo_alt = login_title | default: shop.name | append: ' logo'
   assign login_provider_label = login_sso_provider_name
