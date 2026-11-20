@@ -1,0 +1,16 @@
+{
+  "name": "Dell product detail",
+  "route_pattern": "/products/{productSlug}",
+  "sections": {
+    "main": {
+      "type": "product-detail",
+      "settings": {
+        "fallback_delivery_estimate": "Delivery estimate pending",
+        "unavailable_message": "This Dell product is not available for cart purchase right now."
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
