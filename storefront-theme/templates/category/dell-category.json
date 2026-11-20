@@ -1,0 +1,36 @@
+{
+  "name": "Dell category listing",
+  "route_pattern": "/category/{gaming-desktops|gaming-laptops|gaming-accessories}",
+  "sections": {
+    "main": {
+      "type": "product-card",
+      "settings": {
+        "heading": "Dell gaming catalogue",
+        "products_per_page": 24,
+        "category_navigation": [
+          {
+            "label": "Dell gaming PCs",
+            "category": "Dell Gaming PC",
+            "handle": "gaming-desktops",
+            "url": "/category/gaming-desktops"
+          },
+          {
+            "label": "Dell gaming laptops",
+            "category": "Dell Gaming Laptop",
+            "handle": "gaming-laptops",
+            "url": "/category/gaming-laptops"
+          },
+          {
+            "label": "Dell accessories",
+            "category": "Dell Accessory",
+            "handle": "gaming-accessories",
+            "url": "/category/gaming-accessories"
+          }
+        ]
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
