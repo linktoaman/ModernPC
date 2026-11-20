@@ -7,6 +7,26 @@
 - Theme events dispatch a browser `CustomEvent` and push the same compact payload to `window.dataLayer` only when a data layer is present.
 - Numeric IDs and quantities are allowed because they describe catalog and cart state, not customer identity.
 
+## Event: `login_page_initial_render`
+
+Purpose: confirm that the public login page reached its initial client-side render target without collecting authentication, navigation, or user data.
+
+Emission point: the login page schedules one event after `DOMContentLoaded` using `window.themeAnalytics.trackLoginPageInitialRender()` when the shared theme analytics helper is available. The call is wrapped so missing analytics ingestion or runtime analytics errors cannot block page rendering, SSO navigation, or help-link navigation.
+
+Payload:
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `event` | string | Yes | Always `login_page_initial_render`. |
+| `render_target` | string | Yes | Always `login_page`. |
+| `source` | string | Yes | Always `shopify_theme`. |
+
+Acceptance checks:
+
+- Login page initialization emits one `login_page_initial_render` event when the shared analytics helper is present.
+- Payload contains no username, password, SSO assertion, token, URL, query string, referrer, customer identifier, contact data, financial data, health data, payment data, card data, or personal data.
+- Missing or failing analytics ingestion does not block initial rendering, SSO navigation, help navigation, checkout, payment, or admin operations.
+
 ## Event: `product_viewed`
 
 Purpose: measure product detail engagement for discovery and merchandising KPI coverage.

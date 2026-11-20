@@ -1,5 +1,7 @@
 {% render 'login-configuration' %}
 
+<script src="{{ 'analytics/events.js' | asset_url }}" defer></script>
+
 {% liquid
   assign login_title = login_page_title
   assign login_logo_alt = login_title | default: shop.name | append: ' logo'
@@ -75,6 +77,20 @@
     </div>
   </div>
 </section>
+
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    window.setTimeout(function () {
+      try {
+        if (window.themeAnalytics && typeof window.themeAnalytics.trackLoginPageInitialRender === 'function') {
+          window.themeAnalytics.trackLoginPageInitialRender();
+        }
+      } catch (error) {
+        return;
+      }
+    }, 0);
+  });
+</script>
 
 {% schema %}
 {
