@@ -10,6 +10,7 @@
 | System of record | External ERP/accounting system |
 | SaaS role | Operational stock copy for storefront availability and checkout blocking |
 | Owner | Operations Representative |
+| Catalogue configuration | `docs/platform/catalogue-configuration.md` |
 
 ## Sensitive Data Prohibition
 
@@ -21,7 +22,7 @@ This template must never contain raw payment card numbers, CVV/CVC values, magne
 |---|---:|---|---|
 | `template_version` | Yes | Text, fixed value `v1.0` | Every row must match the workbook header version. |
 | `erp_product_id` | Yes | Text | Must match an existing ERP/accounting product identifier. |
-| `sku` | Yes | Text | Must match an existing SaaS product SKU before import. |
+| `sku` | Yes | Text | Must match an existing SaaS product SKU before import; the matched product must be Dell-branded and assigned to an approved Dell launch category before customer-visible stock is updated. |
 | `inventory_location_id` | Yes | Text | Use approved ERP or SaaS stock location identifier. |
 | `inventory_location_name` | Yes | Text | Human-readable stock location name. |
 | `stock_status` | Yes | Controlled text | Allowed values: `In Stock`, `Low Stock`, `Out of Stock`, `Preorder`, `Backorder`. |
@@ -41,10 +42,15 @@ Before production import, the Operations Representative must review the SaaS imp
 
 - Required columns are present and match the `v1.0` template.
 - Every SKU maps to one existing SaaS product.
+- The mapped product is Dell-branded and assigned to `Dell Gaming PC`, `Dell Gaming Laptop`, or `Dell Accessory`; inventory updates for non-Dell or unsupported-category products must be rejected or kept customer-unpublished.
 - Quantity fields are non-negative integers.
 - Stock status is consistent with available quantity and selling policy.
 - Delivery estimates are customer-safe and do not expose internal supply-chain notes.
 - No raw card data, CVV/CVC values, secrets, API keys, or sensitive payment credentials are present.
+
+## Customer Visibility Rules
+
+Inventory imports must not make an ineligible product visible. Customer-facing availability may be updated only for existing products that already pass the Dell-only catalogue controls in `docs/platform/catalogue-configuration.md`. Out-of-stock products may remain published for detail visibility, but cart and checkout purchase actions must remain blocked when available quantity is `0` and no approved preorder or backorder policy is enabled.
 
 ## Production Import Controls
 
