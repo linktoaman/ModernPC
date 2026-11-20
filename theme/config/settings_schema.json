@@ -1,0 +1,45 @@
+[
+  {
+    "name": "Login",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Login configuration"
+      },
+      {
+        "type": "paragraph",
+        "content": "Non-secret storefront login values only. Leave unresolved values blank until product approval; SSO redirect and help URLs must be absolute HTTPS URLs before release."
+      },
+      {
+        "type": "text",
+        "id": "login_page_title",
+        "label": "Login page title",
+        "info": "Required before release. Do not use placeholder production content."
+      },
+      {
+        "type": "image_picker",
+        "id": "login_logo",
+        "label": "Login logo",
+        "info": "Required before release. Use an approved non-sensitive storefront logo asset."
+      },
+      {
+        "type": "text",
+        "id": "login_sso_provider_name",
+        "label": "SSO provider display name",
+        "info": "Required before release. Public display name only; do not store credentials, tokens, assertions, or identifiers."
+      },
+      {
+        "type": "url",
+        "id": "login_sso_redirect_url",
+        "label": "SSO redirect URL",
+        "info": "Required before release. Must be an absolute HTTPS URL."
+      },
+      {
+        "type": "url",
+        "id": "login_help_url",
+        "label": "Login help URL",
+        "info": "Required before release. Must be an absolute HTTPS URL."
+      }
+    ]
+  }
+]

@@ -1,0 +1,37 @@
+{% liquid
+  assign login_page_title = settings.login_page_title | strip
+  assign login_logo = settings.login_logo
+  assign login_sso_provider_name = settings.login_sso_provider_name | strip
+  assign login_sso_redirect_url = settings.login_sso_redirect_url | strip
+  assign login_help_url = settings.login_help_url | strip
+  assign login_sso_redirect_url_prefix = login_sso_redirect_url | slice: 0, 8
+  assign login_help_url_prefix = login_help_url | slice: 0, 8
+
+  assign login_configuration_blockers = ''
+
+  if login_page_title == blank
+    assign login_configuration_blockers = login_configuration_blockers | append: 'Login page title requires product approval.|'
+  endif
+
+  if login_logo == blank
+    assign login_configuration_blockers = login_configuration_blockers | append: 'Login logo asset requires product approval.|'
+  endif
+
+  if login_sso_provider_name == blank
+    assign login_configuration_blockers = login_configuration_blockers | append: 'SSO provider display name requires product approval.|'
+  endif
+
+  if login_sso_redirect_url == blank
+    assign login_configuration_blockers = login_configuration_blockers | append: 'SSO redirect URL requires product approval.|'
+  elsif login_sso_redirect_url_prefix != 'https://'
+    assign login_configuration_blockers = login_configuration_blockers | append: 'SSO redirect URL must be an absolute HTTPS URL before release.|'
+  endif
+
+  if login_help_url == blank
+    assign login_configuration_blockers = login_configuration_blockers | append: 'Login help URL requires product approval.|'
+  elsif login_help_url_prefix != 'https://'
+    assign login_configuration_blockers = login_configuration_blockers | append: 'Login help URL must be an absolute HTTPS URL before release.|'
+  endif
+
+  assign login_configuration_blockers = login_configuration_blockers | split: '|'
+%}
