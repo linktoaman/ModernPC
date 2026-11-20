@@ -1,0 +1,109 @@
+{% liquid
+  assign login_page_title = settings.login_page_title | strip
+  assign login_logo = settings.login_logo
+  assign login_sso_provider_name = settings.login_sso_provider_name | strip
+  assign login_sso_redirect_url = settings.login_sso_redirect_url | strip
+  assign login_help_url = settings.login_help_url | strip
+  assign login_sso_redirect_url_prefix = login_sso_redirect_url | slice: 0, 8
+  assign login_help_url_prefix = login_help_url | slice: 0, 8
+
+  assign login_title = login_page_title
+  assign login_logo_alt = login_title | default: shop.name | append: ' logo'
+  assign login_provider_label = login_sso_provider_name
+  assign login_sso_href = login_sso_redirect_url
+  assign login_help_href = login_help_url
+
+  if login_provider_label == blank
+    assign login_provider_label = 'SSO'
+  endif
+
+  if login_sso_href == blank or login_sso_redirect_url_prefix != 'https://'
+    assign login_sso_href = '#'
+  endif
+
+  if login_help_href == blank or login_help_url_prefix != 'https://'
+    assign login_help_href = '#'
+  endif
+%}
+
+<section class="login-page" aria-labelledby="LoginPageTitle">
+  <div class="login-page__shell">
+    <aside class="login-page__context" aria-label="Login context">
+      <p class="login-page__context-kicker">Secure storefront access</p>
+      <h2 class="login-page__context-title">One approved sign-in path.</h2>
+      <p class="login-page__context-copy">
+        Continue through the configured single sign-on provider. This page does not collect credentials, payment data, financial data, health data, or sensitive personal information.
+      </p>
+    </aside>
+
+    <div class="login-card">
+      <div class="login-card__brand">
+        {% if login_logo != blank %}
+          {{
+            login_logo
+            | image_url: width: 240
+            | image_tag:
+              class: 'login-card__logo',
+              widths: '120, 180, 240',
+              sizes: '120px',
+              alt: login_logo_alt
+          }}
+        {% else %}
+          <div class="login-card__logo login-card__logo--unconfigured" aria-label="Login logo"></div>
+        {% endif %}
+      </div>
+
+      {% if login_title != blank %}
+        <h1 class="login-card__title" id="LoginPageTitle">{{ login_title | escape }}</h1>
+      {% else %}
+        <h1 class="login-card__title" id="LoginPageTitle">{{ shop.name | default: 'Login' | escape }}</h1>
+      {% endif %}
+
+      <p class="login-card__intro">
+        Use your organization account to continue. Registration and account recovery are not included on this page.
+      </p>
+
+      <div class="login-card__status" role="status" aria-live="polite" aria-label="Login status"></div>
+
+      <a class="login-card__sso-button" href="{{ login_sso_href | escape }}">
+        Continue with {{ login_provider_label | escape }}
+      </a>
+
+      <div class="login-card__help-row">
+        <a class="login-card__help-link" href="{{ login_help_href | escape }}">
+          Need help signing in?
+        </a>
+      </div>
+
+      <p class="login-card__scope-note">
+        No username, password, registration, account recovery, or sensitive data entry is available here.
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    window.setTimeout(function () {
+      try {
+        if (window.themeAnalytics && typeof window.themeAnalytics.trackLoginPageInitialRender === 'function') {
+          window.themeAnalytics.trackLoginPageInitialRender();
+        }
+      } catch (error) {
+        return;
+      }
+    }, 0);
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Login page",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Login page"
+    }
+  ]
+}
+{% endschema %}

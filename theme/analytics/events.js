@@ -2,6 +2,7 @@
   var eventNames = {
     addToCart: 'add_to_cart',
     cartAbandoned: 'cart_abandoned',
+    loginPageInitialRender: 'login_page_initial_render',
     outOfStockAttempted: 'out_of_stock_attempted',
     productViewed: 'product_viewed'
   };
@@ -70,6 +71,11 @@
       compacted.available_quantity = toPositiveNumber(payload.availableQuantity);
     }
 
+    if (eventName === eventNames.loginPageInitialRender) {
+      compacted.render_target = 'login_page';
+      compacted.source = 'shopify_theme';
+    }
+
     if (eventName === eventNames.productViewed) {
       compacted.product_id = toPositiveNumber(payload.productId);
       compacted.variant_id = toPositiveNumber(payload.variantId);
@@ -102,6 +108,10 @@
 
   window.themeAnalytics.trackCartAbandoned = function (payload) {
     return publish(eventNames.cartAbandoned, payload);
+  };
+
+  window.themeAnalytics.trackLoginPageInitialRender = function () {
+    return publish(eventNames.loginPageInitialRender);
   };
 
   window.themeAnalytics.trackOutOfStockAttempted = function (payload) {
