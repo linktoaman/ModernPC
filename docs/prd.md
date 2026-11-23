@@ -1,116 +1,116 @@
 # Product Requirements Document (PRD)
 
-> Replace all `<PLACEHOLDER>` values. Keep requirement IDs stable after approval so downstream ARD and feature specifications retain traceability.
+> Requirement source: “Create a pharamcy application.”
 
 ## Document Metadata
 
-- **Product/Application:** ModernPC1 Dell Red Witch Gaming Store
-- **Document ID:** PRD-MODERNPC1
+- **Product/Application:** Pharmacy Application
+- **Document ID:** PRD-PHARMACY-APP
 - **Version:** 0.1
 - **Status:** Draft
 - **Owner:** TBD
 - **Contributors:** TBD
-- **Last Updated:** 2026-11-19
+- **Last Updated:** 2026-11-23
 
 ---
 
 ## 1. Executive Summary
 
-ModernPC1 will launch a modern ecommerce website for selling Dell-only gaming PCs, Dell gaming laptops, and Dell accessories to individual gamers in the United States. The website will use a dark gaming visual style with red accents and witch-inspired motifs, aligned to the requested Red Witch/CDW-style theme while keeping the buying experience clear and commerce-focused.
+The Pharmacy Application is a HIPAA-compliant responsive web platform for a small healthcare business. It provides separate role-based experiences for patients and pharmacy staff so patients can request refills, view prescription status, and communicate securely with the pharmacy, while pharmacists and pharmacy technicians can review requests, update statuses, and respond to patient messages.
 
-The first release will let customers browse Dell product categories, search, filter, sort, review product details, add products to a cart, and complete checkout with online payment. Customers may check out as guests or create optional accounts. A simple website admin user will manage catalogue content, prices, stock status, and order status.
-
-The expected value is to start online sales for Dell gaming products instead of relying on offline or manual sales, while creating a focused branded storefront for gamers.
+The expected value is to reduce paper and phone-based pharmacy operations, improve refill visibility for patients, and give staff a centralized workflow for handling refill-related activity. The first release prioritizes a focused digital workflow over broader pharmacy operations such as payments, insurance adjudication, delivery logistics, and inventory management.
 
 ## 2. Problem Statement
 
-Today, the business needs an online channel to sell Dell gaming PCs, laptops, and accessories. Individual gamers who want to buy Dell gaming products need a clear way to discover products, compare relevant options through search/filter/sort, add items to a cart, and pay online. The business also needs a simple way to maintain products, pricing, stock status, and order status without relying fully on manual website updates.
+Today, the business needs a HIPAA-compliant digital workflow to reduce paper and phone-based pharmacy operations. Patients rely on manual channels to request refills and check prescription status, while pharmacy staff must process those interactions without a centralized digital patient/staff workflow.
 
 ## 3. Product Vision
 
-Create a focused Dell-only gaming ecommerce storefront with a dark red Red Witch visual identity, fast product discovery, reliable cart and checkout flows, visible stock and delivery estimates, and simple operational tools for managing the catalogue and orders.
+The target end state is a secure, accessible, responsive pharmacy web application where patients can self-serve common refill and status needs, and pharmacy staff can manage refill requests and secure communications in one HIPAA-compliant platform.
 
 ## 4. Goals and Success Measures
 
 ### 4.1 Goals
 
-- Launch an online sales channel for Dell gaming PCs, Dell gaming laptops, and Dell accessories.
-- Enable individual gamers in the United States to browse, add to cart, and pay online in USD.
-- Present the store with a modern dark gaming theme using red accents and witch-inspired visual motifs.
-- Give a simple admin user control over product catalogue, prices, stock status, and order status.
-- Handle key checkout edge cases including payment failure, payment cancellation, and out-of-stock changes.
+- Reduce phone-based refill requests and prescription status calls.
+- Enable patients to request refills, track prescription status, and securely message the pharmacy.
+- Enable pharmacists and pharmacy technicians to review refill requests, update prescription statuses, and respond to secure messages.
+- Provide a HIPAA-compliant digital workflow with role-based access, encryption, audit logging, secure authentication, and automatic session timeout.
 
 ### 4.2 Success Measures
 
 | ID | Measure | Baseline | Target | Measurement Method |
 |---|---|---:|---:|---|
-| KPI-001 | Website traffic | TBD | TBD | Web analytics report; see OQ-002 |
-| KPI-002 | Add-to-cart rate | TBD | TBD | Ecommerce funnel analytics; see OQ-002 |
-| KPI-003 | Checkout completion rate | TBD | TBD | Ecommerce checkout funnel analytics; see OQ-002 |
-| KPI-004 | Completed online orders | TBD | TBD | Order management report; see OQ-002 |
+| KPI-001 | Phone-based refill requests and prescription status calls | TBD | 25% reduction within 90 days of launch | Compare pre-launch baseline call volume to call volume during the first 90 days after launch. |
+| KPI-002 | Refill request review turnaround | TBD | 90% reviewed by staff within 1 business day | Measure elapsed time from patient refill request submission to first staff review event. |
+| KPI-003 | Patient adoption | TBD | 25% of active patients registered within 90 days of launch | Compare registered patient accounts to the active patient population. |
 
 ## 5. Scope
 
 ### 5.1 In Scope
 
-- Dell-only product catalogue for gaming PCs, gaming laptops, and accessories.
-- Dark gaming visual theme with red accents and witch-inspired motifs.
-- Category browsing, product search, filters, and sorting.
-- Product detail pages with product information, price, stock status, and delivery estimate.
-- Cart with add, remove, quantity review, and checkout entry.
-- Guest checkout and optional customer accounts.
-- Online payment checkout with provider and supported payment methods to be decided.
-- Payment confirmation, payment failure, and payment cancellation handling.
-- Out-of-stock handling when stock changes during shopping or checkout.
-- Order confirmation after successful checkout.
-- Simple admin user capabilities for catalogue, price, stock status, and order status management.
-- United States launch market with USD pricing.
+- Responsive web application for patients and pharmacy staff.
+- Separate role-based patient and staff experiences.
+- Patient account creation.
+- Staff account provisioning by an administrator.
+- Patient refill request submission.
+- Patient prescription status tracking.
+- Secure patient-pharmacy messaging.
+- Staff refill request review.
+- Staff prescription status updates.
+- Staff secure message responses.
+- Patient-friendly status display and staff-routed manual resolution for refill exceptions.
+- Manual staff entry and status updates for prescription data in the first release.
+- HIPAA-aligned security controls for protected health information.
 
 ### 5.2 Out of Scope
 
-- Non-Dell products.
-- Third-party marketplace sellers.
-- Multi-country or multi-currency launch support.
-- Product reviews and ratings.
-- Promotions, coupons, and loyalty programs.
-- Product comparison, unless added in a later release.
-- Returns, refunds, cancellations, and shipment tracking beyond initial order confirmation.
-- Business bulk purchasing workflows.
+- Payments.
+- Insurance adjudication.
+- Delivery logistics.
+- Inventory management.
+- Native iOS or Android applications for the first release.
+- Automated integration with an existing pharmacy management system for the first release.
 
 ## 6. Personas and Users
 
-### PERSONA-001 — Individual Gamer Buyer
+### PERSONA-001 — Patient
 
-- **Description:** A United States-based individual gamer shopping for a Dell gaming PC, Dell gaming laptop, or Dell accessory for personal use.
-- **Primary Need:** Quickly find a suitable Dell gaming product, understand price and availability, and complete purchase online.
-- **Key Pain Point:** Offline/manual sales make product discovery and purchase slower than a dedicated ecommerce experience.
+- **Description:** A pharmacy patient who needs digital access to refill requests, prescription status, and secure communication with the pharmacy.
+- **Primary Need:** Request refills and understand prescription status without relying on phone or paper-based workflows.
+- **Key Pain Point:** Limited self-service visibility into refill progress and pharmacy responses.
 
-### PERSONA-002 — Store Admin User
+### PERSONA-002 — Pharmacist
 
-- **Description:** A business user responsible for maintaining the website’s Dell product catalogue, pricing, stock status, and order status.
-- **Primary Need:** Keep storefront product and order information accurate without developer involvement for every update.
-- **Key Pain Point:** Static or manually updated catalogue data can become inaccurate and block reliable ecommerce operations.
+- **Description:** A licensed pharmacy staff member responsible for reviewing refill requests, updating prescription statuses, and communicating with patients.
+- **Primary Need:** Manage refill-related work through a secure, centralized digital workflow.
+- **Key Pain Point:** Manual and phone-based workflows create operational overhead and limited traceability.
+
+### PERSONA-003 — Pharmacy Technician
+
+- **Description:** A pharmacy staff member who supports refill request processing, status updates, and patient communication under pharmacy workflow rules.
+- **Primary Need:** Efficiently triage refill requests and patient messages.
+- **Key Pain Point:** Paper and phone-based workflows make request tracking and handoffs inefficient.
 
 ## 7. Assumptions and Dependencies
 
 ### Assumptions
 
-- ASM-001 — The business has permission and source data to sell and present Dell-only gaming products online (assumption).
-- ASM-002 — The Red Witch/CDW theme means a dark gaming style with red accents and witch-inspired visual motifs, not a direct copy of another brand’s proprietary design.
-- ASM-003 — The first release serves United States customers and prices products in USD.
-- ASM-004 — A simple admin user is sufficient for first-release operational management.
+- ASM-001 — The first release is a responsive web application for both patients and pharmacy staff.
+- ASM-002 — Prescription data will be entered and updated manually by staff in the first release.
+- ASM-003 — Refill exceptions require manual staff resolution and patient-friendly status communication.
+- ASM-004 — The product is for a small business in the healthcare industry and must support HIPAA compliance.
 
 ### Dependencies
 
-- DEP-001 — Selection of an online payment provider and supported payment methods; see OQ-001.
-- DEP-002 — Availability of accurate Dell product data, images, specifications, prices, stock status, and delivery estimates.
-- DEP-003 — Availability of hosting, analytics, and ecommerce infrastructure needed to support browsing, cart, checkout, payment confirmation, and admin management.
-- DEP-004 — Confirmation of launch date and rollout plan; see OQ-003.
-- DEP-005 — Confirmation of measurable non-functional thresholds; see OQ-004.
+- DEP-001 — Pharmacy staff must be available to review refill requests within the defined business-day target.
+- DEP-002 — An administrator must provision staff accounts before staff can access the application.
+- DEP-003 — The business must define the active patient population for adoption measurement.
+- DEP-004 — The business must establish pre-launch call volume baseline data for KPI-001.
 
 ## 8. Functional Requirements
 
-### PRD-FR-001 — Dell-Only Product Catalogue
+### PRD-FR-001 — Patient Account Registration
 
 - **Priority:** Must
 - **Feature:** FEAT-001
@@ -118,21 +118,66 @@ Create a focused Dell-only gaming ecommerce storefront with a dark red Red Witch
 
 **Requirement**
 
-The system shall display only Dell gaming PCs, Dell gaming laptops, and Dell accessories in the customer-facing catalogue.
+The system shall allow patients to create accounts for accessing patient-facing pharmacy features.
 
 **Business Rationale**
 
-The business requirement explicitly limits the website to Dell items and the selected first-release catalogue categories.
+Patient accounts are required to support refill requests, prescription status tracking, secure messaging, and patient adoption measurement.
 
 **Acceptance Criteria**
 
-1. Customers can access catalogue categories for Dell gaming PCs, Dell gaming laptops, and Dell accessories.
-2. No non-Dell product is visible in customer-facing category, search, filter, product detail, cart, or checkout pages.
-3. Each listed product displays a product name, category, price in USD, product image or image placeholder, stock status, and delivery estimate.
+1. A patient can complete account creation through the responsive web application.
+2. A registered patient can sign in and access patient-facing features.
+3. A non-signed-in user cannot access patient prescription status or secure messages.
 
 ---
 
-### PRD-FR-002 — Red Witch Themed Storefront
+### PRD-FR-002 — Staff Account Provisioning
+
+- **Priority:** Must
+- **Feature:** FEAT-001
+- **Persona:** PERSONA-002
+
+**Requirement**
+
+The system shall support administrator-provisioned staff accounts for pharmacists and pharmacy technicians.
+
+**Business Rationale**
+
+Staff access must be controlled because pharmacy workflows involve protected health information and role-based access.
+
+**Acceptance Criteria**
+
+1. Staff users cannot self-register for staff access.
+2. A provisioned staff user can sign in and access staff-facing functionality.
+3. A non-provisioned user cannot access staff-facing functionality.
+
+---
+
+### PRD-FR-003 — Role-Based Experiences
+
+- **Priority:** Must
+- **Feature:** FEAT-001
+- **Persona:** PERSONA-001
+
+**Requirement**
+
+The system shall provide separate role-based experiences for patients and staff.
+
+**Business Rationale**
+
+Patients and staff have different needs and different permissions for protected health information and workflow actions.
+
+**Acceptance Criteria**
+
+1. Patient users see patient-facing refill, status, and messaging capabilities.
+2. Staff users see staff-facing refill review, status update, and messaging capabilities.
+3. Patient users cannot access staff-only screens or actions.
+4. Staff users cannot use patient-only account workflows as a patient unless they have a separate patient account.
+
+---
+
+### PRD-FR-004 — Patient Refill Request Submission
 
 - **Priority:** Must
 - **Feature:** FEAT-002
@@ -140,21 +185,45 @@ The business requirement explicitly limits the website to Dell items and the sel
 
 **Requirement**
 
-The system shall present the customer-facing website using a dark gaming style with red accents and witch-inspired visual motifs.
+The system shall allow patients to submit refill requests through the responsive web application.
 
 **Business Rationale**
 
-The visual identity is part of the original requirement and differentiates the storefront for gaming buyers.
+Digital refill requests reduce paper and phone-based pharmacy operations.
 
 **Acceptance Criteria**
 
-1. The homepage, category pages, product detail pages, cart, and checkout pages use a consistent dark theme with red accent elements.
-2. Witch-inspired visual motifs are present in the site branding or decorative UI without blocking product browsing or checkout tasks.
-3. Core commerce actions including search, add to cart, checkout, and payment continuation remain visually prominent and readable.
+1. A signed-in patient can submit a refill request for a prescription available in the application.
+2. The submitted refill request appears in the staff refill review workflow.
+3. The patient receives a visible confirmation after successful submission.
+4. Invalid or incomplete refill request submissions are not accepted and display patient-friendly guidance.
 
 ---
 
-### PRD-FR-003 — Product Discovery
+### PRD-FR-005 — Staff Refill Request Review
+
+- **Priority:** Must
+- **Feature:** FEAT-002
+- **Persona:** PERSONA-002
+
+**Requirement**
+
+The system shall allow pharmacists and pharmacy technicians to review patient refill requests.
+
+**Business Rationale**
+
+Staff need a centralized workflow to process refill requests and meet the target that 90% are reviewed within 1 business day.
+
+**Acceptance Criteria**
+
+1. A staff user can view submitted refill requests.
+2. A staff user can mark a refill request as reviewed.
+3. The system records the timestamp of the refill request submission and staff review.
+4. The system supports reporting whether refill requests were reviewed within 1 business day.
+
+---
+
+### PRD-FR-006 — Prescription Status Tracking
 
 - **Priority:** Must
 - **Feature:** FEAT-003
@@ -162,46 +231,45 @@ The visual identity is part of the original requirement and differentiates the s
 
 **Requirement**
 
-The system shall let customers discover products using category browsing, search, filters, and sorting.
+The system shall allow patients to view patient-friendly prescription and refill statuses.
 
 **Business Rationale**
 
-Gamers need to find relevant Dell gaming products quickly before adding items to cart and purchasing.
+Prescription status visibility reduces patient reliance on phone calls for updates.
 
 **Acceptance Criteria**
 
-1. Customers can browse products by category.
-2. Customers can search the catalogue and receive matching Dell product results.
-3. Customers can filter product listings using available product attributes.
-4. Customers can sort product listings using available sort options.
-5. If no products match a search or filter combination, the system displays an empty-results message and a way to clear or change criteria.
+1. A signed-in patient can view the current status for prescriptions available in the application.
+2. Status labels are displayed in patient-friendly language.
+3. Status changes made by staff are reflected in the patient view.
+4. A patient cannot view another patient’s prescription status.
 
 ---
 
-### PRD-FR-004 — Product Detail View
+### PRD-FR-007 — Staff Prescription Status Updates
 
 - **Priority:** Must
-- **Feature:** FEAT-001
-- **Persona:** PERSONA-001
+- **Feature:** FEAT-003
+- **Persona:** PERSONA-002
 
 **Requirement**
 
-The system shall provide product detail pages for Dell products that support purchase decisions.
+The system shall allow pharmacists and pharmacy technicians to update prescription and refill statuses manually.
 
 **Business Rationale**
 
-Customers need enough product, price, availability, and delivery information to decide whether to add an item to cart.
+Manual status updates are required because the first release does not depend on pharmacy management system integration.
 
 **Acceptance Criteria**
 
-1. Selecting a product from a listing opens a product detail page for that product.
-2. The product detail page shows product name, category, price in USD, stock status, delivery estimate, and product image or image placeholder.
-3. The product detail page provides an add-to-cart action when the product is in stock.
-4. The add-to-cart action is unavailable or blocked when the product is out of stock.
+1. A staff user can update the status of a prescription or refill request available in the application.
+2. Updated statuses are visible to the relevant patient.
+3. The system records which staff user made the status update and when.
+4. A patient cannot update prescription or refill statuses.
 
 ---
 
-### PRD-FR-005 — Cart Management
+### PRD-FR-008 — Secure Patient-Pharmacy Messaging
 
 - **Priority:** Must
 - **Feature:** FEAT-004
@@ -209,23 +277,22 @@ Customers need enough product, price, availability, and delivery information to 
 
 **Requirement**
 
-The system shall allow customers to add products to a cart and review cart contents before checkout.
+The system shall allow patients and pharmacy staff to exchange secure messages within the application.
 
 **Business Rationale**
 
-Cart management is required to support ecommerce purchase flow from product discovery to checkout.
+Secure messaging reduces phone-based operations while keeping patient-pharmacy communication inside a HIPAA-aligned workflow.
 
 **Acceptance Criteria**
 
-1. Customers can add an in-stock product to the cart from the product detail page.
-2. The cart displays each selected product, quantity, item price, and cart total in USD.
-3. Customers can remove products from the cart.
-4. Customers can proceed from the cart to checkout when the cart contains at least one available product.
-5. The system prevents checkout from an empty cart.
+1. A signed-in patient can send a secure message to the pharmacy.
+2. A staff user can view and respond to secure patient messages.
+3. A patient can view staff responses in the application.
+4. Message access is limited to authorized users associated with the message.
 
 ---
 
-### PRD-FR-006 — Guest and Optional Account Checkout
+### PRD-FR-009 — Refill Exception Routing
 
 - **Priority:** Must
 - **Feature:** FEAT-005
@@ -233,292 +300,284 @@ Cart management is required to support ecommerce purchase flow from product disc
 
 **Requirement**
 
-The system shall support both guest checkout and optional customer account checkout.
+The system shall show patient-friendly statuses for refill exceptions and route exceptions to staff for manual resolution.
 
 **Business Rationale**
 
-The selected launch model balances low-friction purchasing with optional account benefits for returning customers.
+Refill requests can require human review, and patients need clear status visibility without exposing unnecessary internal details.
 
 **Acceptance Criteria**
 
-1. Customers can begin checkout without creating an account.
-2. Customers can choose to sign in or create an account as part of the checkout journey.
-3. Guest checkout captures the customer information required to place the order.
-4. Account checkout associates the order with the signed-in customer account.
+1. A refill request with missing, invalid, or exception conditions is visible to staff for manual resolution.
+2. The patient sees a patient-friendly status when a refill exception is pending manual resolution.
+3. The system does not automatically reject refill requests solely because manual resolution is required.
+4. Staff can update the exception status after review.
 
 ---
 
-### PRD-FR-007 — Online Payment Flow
+### PRD-FR-010 — Success Metric Reporting Data
 
-- **Priority:** Must
+- **Priority:** Should
 - **Feature:** FEAT-006
-- **Persona:** PERSONA-001
-
-**Requirement**
-
-The system shall let customers pay online during checkout using the selected payment provider and supported payment methods.
-
-**Business Rationale**
-
-The launch requires customers to browse, add to cart, and pay online rather than relying on offline/manual sales.
-
-**Acceptance Criteria**
-
-1. Customers can proceed from checkout to the selected online payment flow.
-2. The payment amount sent for payment equals the final checkout total shown to the customer.
-3. After successful payment, the system displays an order confirmation.
-4. If payment fails, the system displays a failure message and allows the customer to retry payment or return to checkout.
-5. If payment is cancelled, the system displays a cancellation message and keeps the customer’s cart or checkout context available for retry.
-
----
-
-### PRD-FR-008 — Stock and Delivery Visibility
-
-- **Priority:** Must
-- **Feature:** FEAT-007
-- **Persona:** PERSONA-001
-
-**Requirement**
-
-The system shall show product stock status, delivery estimate, and order confirmation information to customers.
-
-**Business Rationale**
-
-Customers need availability and delivery expectations before purchasing, and confirmation after purchase.
-
-**Acceptance Criteria**
-
-1. Product listing or detail pages show whether a product is in stock or out of stock.
-2. Product detail or checkout pages show a delivery estimate before payment is completed.
-3. Successful checkout displays an order confirmation with order summary information.
-4. If an item becomes out of stock before checkout completion, the system blocks purchase of that item and explains the issue to the customer.
-
----
-
-### PRD-FR-009 — Admin Catalogue and Order Management
-
-- **Priority:** Must
-- **Feature:** FEAT-008
 - **Persona:** PERSONA-002
 
 **Requirement**
 
-The system shall provide a simple admin user capability to manage product catalogue content, prices, stock status, and order status.
+The system shall record the application events needed to measure patient registration, refill request submission, refill request review, and staff status updates.
 
 **Business Rationale**
 
-The business needs operational control over product and order data without relying on developer-only updates.
+The business needs observable data to evaluate launch success against adoption and turnaround targets.
 
 **Acceptance Criteria**
 
-1. An admin user can create, update, and remove customer-visible product listings.
-2. An admin user can update product prices in USD.
-3. An admin user can update product stock status.
-4. An admin user can view and update order status.
-5. Changes saved by an admin user are reflected in the customer-facing storefront or order view.
+1. The system records patient account creation events.
+2. The system records refill request submission events.
+3. The system records staff refill review events.
+4. The system records staff status update events.
 
 ## 9. Non-Functional Requirements
 
-### PRD-NFR-001 — Security and Privacy Controls
+### PRD-NFR-001 — HIPAA-Aligned Access Control
+
+- **Category:** Compliance
+- **Priority:** Must
+
+**Requirement**
+
+The system shall enforce role-based access controls for patient and staff access to protected health information.
+
+**Acceptance Criteria**
+
+1. Unauthorized users cannot access protected health information through patient-facing or staff-facing application routes.
+2. Patient users can access only their own protected health information.
+3. Staff users can access staff workflows only after being provisioned.
+
+---
+
+### PRD-NFR-002 — Encryption
 
 - **Category:** Security
 - **Priority:** Must
 
 **Requirement**
 
-The system shall protect customer account, checkout, order, and payment-related data according to security and privacy controls to be finalized before launch; see OQ-004.
+The system shall encrypt protected health information in transit and at rest.
 
 **Acceptance Criteria**
 
-1. No payment card data is stored by the website unless explicitly supported by the selected payment provider and approved security controls.
-2. Customer personal and order data is accessible only to authorized customer or admin sessions.
-3. Security and privacy acceptance thresholds are documented before launch as part of OQ-004 closure.
+1. Application traffic containing protected health information is encrypted in transit.
+2. Stored protected health information is encrypted at rest.
+3. Security verification evidence confirms encryption is enabled before production launch.
 
-### PRD-NFR-002 — Mobile Responsiveness
+---
+
+### PRD-NFR-003 — Audit Logging
+
+- **Category:** Compliance
+- **Priority:** Must
+
+**Requirement**
+
+The system shall maintain audit logs for access to protected health information.
+
+**Acceptance Criteria**
+
+1. The system records user identity, timestamp, and action for protected health information access events.
+2. Audit logs are available for authorized review.
+3. Audit logging is active for patient and staff workflows before production launch.
+
+---
+
+### PRD-NFR-004 — Secure Authentication and Session Timeout
+
+- **Category:** Security
+- **Priority:** Must
+
+**Requirement**
+
+The system shall require secure authentication and automatic session timeout for patient and staff users.
+
+**Acceptance Criteria**
+
+1. Protected application areas require successful authentication before access.
+2. Inactive authenticated sessions automatically time out.
+3. After session timeout, the user must re-authenticate before accessing protected areas.
+
+---
+
+### PRD-NFR-005 — Accessibility
 
 - **Category:** Accessibility
 - **Priority:** Must
 
 **Requirement**
 
-The system shall provide a usable responsive shopping experience across customer-facing browsing, cart, and checkout pages.
+The responsive web application shall meet WCAG 2.1 AA accessibility requirements.
 
 **Acceptance Criteria**
 
-1. Homepage, category listing, product detail, cart, and checkout pages render without horizontal scrolling on supported mobile and desktop viewport sizes defined through OQ-004.
-2. Primary customer actions remain visible and usable on supported mobile and desktop viewport sizes defined through OQ-004.
+1. Accessibility validation confirms WCAG 2.1 AA compliance for patient-facing core workflows.
+2. Accessibility validation confirms WCAG 2.1 AA compliance for staff-facing core workflows.
+3. Accessibility defects blocking refill request submission, status viewing, or secure messaging are resolved before launch.
 
-### PRD-NFR-003 — Accessibility
+---
 
-- **Category:** Accessibility
+### PRD-NFR-006 — Availability
+
+- **Category:** Availability
 - **Priority:** Must
 
 **Requirement**
 
-The system shall meet the accessibility standard selected before launch; see OQ-004.
+The system shall achieve 99.5% monthly availability after launch.
 
 **Acceptance Criteria**
 
-1. The selected accessibility standard and test method are documented before launch as part of OQ-004 closure.
-2. Customer-facing homepage, product listing, product detail, cart, and checkout pages pass the selected accessibility test method before launch.
+1. Monthly availability reporting shows whether the application met the 99.5% target.
+2. Availability monitoring covers patient and staff application access.
 
-### PRD-NFR-004 — Checkout Performance
+---
+
+### PRD-NFR-007 — Page Load Performance
 
 - **Category:** Performance
 - **Priority:** Must
 
 **Requirement**
 
-The system shall meet checkout performance thresholds to be finalized before launch; see OQ-004.
+The system shall load common pages within 3 seconds under normal operating conditions.
 
 **Acceptance Criteria**
 
-1. Cart and checkout pages meet the finalized performance thresholds under the finalized test conditions from OQ-004.
-2. Performance evidence is captured before launch for the cart and checkout journey.
+1. Patient account, refill request, prescription status, and secure messaging pages load within 3 seconds under normal operating conditions.
+2. Staff refill review, status update, and secure messaging pages load within 3 seconds under normal operating conditions.
 
 ## 10. User Journeys
 
-### JOURNEY-001 — Browse and Buy as Guest
+### JOURNEY-001 — Patient Requests a Refill
 
-1. Customer lands on the Red Witch themed storefront.
-2. Customer browses Dell product categories or uses search, filters, and sorting.
-3. Customer opens a product detail page and reviews price, stock status, and delivery estimate.
-4. Customer adds an in-stock product to the cart.
-5. Customer proceeds to guest checkout.
-6. Customer completes online payment.
-7. Customer sees order confirmation.
+1. The patient signs in to the responsive web application.
+2. The patient selects a prescription available in the application.
+3. The patient submits a refill request and receives confirmation.
+4. The refill request appears in the staff review workflow.
 
-**Related Requirements:** PRD-FR-001, PRD-FR-002, PRD-FR-003, PRD-FR-004, PRD-FR-005, PRD-FR-006, PRD-FR-007, PRD-FR-008, PRD-NFR-001, PRD-NFR-004
+**Related Requirements:** PRD-FR-001, PRD-FR-003, PRD-FR-004, PRD-FR-005, PRD-NFR-001
 
-### JOURNEY-002 — Browse and Buy with Optional Account
+### JOURNEY-002 — Staff Reviews a Refill Request
 
-1. Customer lands on the storefront.
-2. Customer signs in or creates an account during the shopping or checkout flow.
-3. Customer browses Dell products, adds an in-stock item to the cart, and proceeds to checkout.
-4. Customer completes online payment.
-5. Customer sees order confirmation associated with the account.
+1. The staff user signs in to the responsive web application.
+2. The staff user opens the refill request workflow.
+3. The staff user reviews the refill request and marks it reviewed.
+4. The system records the review timestamp for turnaround measurement.
 
-**Related Requirements:** PRD-FR-001, PRD-FR-003, PRD-FR-005, PRD-FR-006, PRD-FR-007, PRD-FR-008, PRD-NFR-001
+**Related Requirements:** PRD-FR-002, PRD-FR-003, PRD-FR-005, PRD-FR-010, PRD-NFR-003
 
-### JOURNEY-003 — Admin Updates Product and Order Data
+### JOURNEY-003 — Patient Checks Prescription Status
 
-1. Admin user signs into the admin capability.
-2. Admin user creates or updates a Dell product listing, price, stock status, or order status.
-3. Admin user saves the change.
-4. Customer-facing storefront or order information reflects the saved change.
+1. The patient signs in to the responsive web application.
+2. The patient opens prescription status information.
+3. The patient views the current patient-friendly prescription or refill status.
 
-**Related Requirements:** PRD-FR-009, PRD-NFR-001
+**Related Requirements:** PRD-FR-001, PRD-FR-006, PRD-FR-007, PRD-NFR-001
 
-### JOURNEY-004 — Checkout Edge Case Handling
+### JOURNEY-004 — Patient and Pharmacy Exchange Secure Messages
 
-1. Customer adds an in-stock product to the cart and starts checkout.
-2. Payment fails or is cancelled, or the product becomes out of stock before checkout completes.
-3. The system displays a clear message explaining the issue.
-4. The system allows retry when payment fails or is cancelled, and blocks unavailable items when stock changes.
+1. The patient signs in and sends a secure message to the pharmacy.
+2. A staff user signs in and views the patient message.
+3. The staff user sends a secure response.
+4. The patient views the response in the application.
 
-**Related Requirements:** PRD-FR-005, PRD-FR-007, PRD-FR-008, PRD-NFR-001
+**Related Requirements:** PRD-FR-008, PRD-NFR-001, PRD-NFR-002, PRD-NFR-003
 
 ## 11. Feature Breakdown
 
-### FEAT-001 — Dell Product Catalogue
+### FEAT-001 — Account and Role-Based Access
 
-- **Summary:** Customer-facing catalogue for Dell gaming PCs, Dell gaming laptops, and Dell accessories.
+- **Summary:** Patient account creation, administrator-provisioned staff accounts, and separate patient/staff experiences.
 - **Priority:** Must
-- **Related Requirements:** PRD-FR-001, PRD-FR-004
-- **Expected Spec File:** `specs/FEAT-001-dell-product-catalogue.spec.md`
+- **Related Requirements:** PRD-FR-001, PRD-FR-002, PRD-FR-003, PRD-NFR-001, PRD-NFR-004
+- **Expected Spec File:** `specs/FEAT-001-account-and-role-based-access.spec.md`
 
-### FEAT-002 — Red Witch Storefront Theme
+### FEAT-002 — Refill Request Workflow
 
-- **Summary:** Dark gaming visual design with red accents and witch-inspired motifs.
+- **Summary:** Patient refill request submission and staff refill request review.
 - **Priority:** Must
-- **Related Requirements:** PRD-FR-002, PRD-NFR-002, PRD-NFR-003
-- **Expected Spec File:** `specs/FEAT-002-red-witch-storefront-theme.spec.md`
+- **Related Requirements:** PRD-FR-004, PRD-FR-005, PRD-FR-010
+- **Expected Spec File:** `specs/FEAT-002-refill-request-workflow.spec.md`
 
-### FEAT-003 — Product Discovery
+### FEAT-003 — Prescription Status Management
 
-- **Summary:** Category browsing, search, filters, and sorting for Dell products.
+- **Summary:** Staff-managed prescription statuses displayed to patients in patient-friendly language.
 - **Priority:** Must
-- **Related Requirements:** PRD-FR-003, PRD-NFR-002
-- **Expected Spec File:** `specs/FEAT-003-product-discovery.spec.md`
+- **Related Requirements:** PRD-FR-006, PRD-FR-007
+- **Expected Spec File:** `specs/FEAT-003-prescription-status-management.spec.md`
 
-### FEAT-004 — Shopping Cart
+### FEAT-004 — Secure Messaging
 
-- **Summary:** Add-to-cart, cart review, remove item, and proceed-to-checkout flow.
+- **Summary:** Secure patient-pharmacy messaging inside the application.
 - **Priority:** Must
-- **Related Requirements:** PRD-FR-005, PRD-FR-008, PRD-NFR-004
-- **Expected Spec File:** `specs/FEAT-004-shopping-cart.spec.md`
+- **Related Requirements:** PRD-FR-008, PRD-NFR-001, PRD-NFR-002, PRD-NFR-003
+- **Expected Spec File:** `specs/FEAT-004-secure-messaging.spec.md`
 
-### FEAT-005 — Checkout Accounts
+### FEAT-005 — Refill Exception Handling
 
-- **Summary:** Guest checkout and optional customer account checkout.
+- **Summary:** Patient-friendly refill exception statuses and staff-routed manual resolution.
 - **Priority:** Must
-- **Related Requirements:** PRD-FR-006, PRD-NFR-001
-- **Expected Spec File:** `specs/FEAT-005-checkout-accounts.spec.md`
+- **Related Requirements:** PRD-FR-009
+- **Expected Spec File:** `specs/FEAT-005-refill-exception-handling.spec.md`
 
-### FEAT-006 — Online Payments
+### FEAT-006 — Success Measurement Events
 
-- **Summary:** Online payment flow, confirmation, failure handling, and cancellation handling.
-- **Priority:** Must
-- **Related Requirements:** PRD-FR-007, PRD-NFR-001, PRD-NFR-004
-- **Expected Spec File:** `specs/FEAT-006-online-payments.spec.md`
-
-### FEAT-007 — Stock and Fulfilment Visibility
-
-- **Summary:** Stock status, delivery estimate, order confirmation, and out-of-stock checkout handling.
-- **Priority:** Must
-- **Related Requirements:** PRD-FR-008
-- **Expected Spec File:** `specs/FEAT-007-stock-and-fulfilment-visibility.spec.md`
-
-### FEAT-008 — Admin Management
-
-- **Summary:** Simple admin management of product catalogue, prices, stock status, and order status.
-- **Priority:** Must
-- **Related Requirements:** PRD-FR-009, PRD-NFR-001
-- **Expected Spec File:** `specs/FEAT-008-admin-management.spec.md`
+- **Summary:** Event capture needed to measure registration, refill submission, refill review, and status update activity.
+- **Priority:** Should
+- **Related Requirements:** PRD-FR-010
+- **Expected Spec File:** `specs/FEAT-006-success-measurement-events.spec.md`
 
 ## 12. Constraints
 
-- CON-001 — The first release must sell only Dell items.
-- CON-002 — The first release must serve the United States market and use USD pricing.
-- CON-003 — The storefront must use a dark gaming style with red accents and witch-inspired motifs.
-- CON-004 — The business is a small technology business, so operational tooling should remain simple for launch.
-- CON-005 — Payment provider and supported payment methods are not yet decided; see OQ-001.
-- CON-006 — Launch timing is not yet provided; see OQ-003.
+- CON-001 — The application must support HIPAA compliance because it is for a healthcare business and handles protected health information.
+- CON-002 — The company is a small business, so the first release scope must remain focused on core refill, status, and secure messaging workflows.
+- CON-003 — The first release must be a responsive web application rather than native mobile applications.
+- CON-004 — The first release must use manual staff entry and status updates for prescription data.
+- CON-005 — Payments, insurance adjudication, delivery logistics, and inventory management are excluded from the first release.
+- CON-006 — Target release date is TBD.
 
 ## 13. Risks
 
 | ID | Risk | Impact | Likelihood | Mitigation |
 |---|---|---|---|---|
-| RISK-001 | Payment integration cannot be finalized until provider and methods are selected. | High | Medium | Track provider and method selection as OQ-001 and avoid payment-specific implementation commitments until closed. |
-| RISK-002 | Product, price, stock, or delivery data may be incomplete or inaccurate. | High | Medium | Make catalogue data availability a dependency and provide admin tools to update product, price, stock, and order data. |
-| RISK-003 | The Red Witch/CDW-style theme could be interpreted as copying another brand’s proprietary design. | Medium | Medium | Use original dark red gaming and witch-inspired motifs rather than copying protected brand assets. |
-| RISK-004 | Non-functional quality thresholds are not yet measurable. | Medium | Medium | Close OQ-004 before launch and use the finalized thresholds for acceptance. |
-| RISK-005 | Launch date is not yet provided, creating planning uncertainty. | Medium | Medium | Close OQ-003 and align release scope to the decided date. |
+| RISK-001 | HIPAA control implementation is incomplete before launch. | High | Medium | Require role-based access, encryption, audit logging, secure authentication, and session timeout acceptance before production launch. |
+| RISK-002 | Manual prescription data entry creates operational burden for staff. | Medium | Medium | Limit first release scope and prioritize simple staff status update workflows. |
+| RISK-003 | Patient adoption misses the 25% target within 90 days. | Medium | Medium | Use a pilot rollout and monitor registration progress after launch. |
+| RISK-004 | Refill review turnaround misses the 1-business-day target. | Medium | Medium | Track submission and review timestamps and monitor staff queue performance. |
+| RISK-005 | Baseline call volume is not established before launch. | Medium | Medium | Resolve OQ-001 before measuring KPI-001 performance. |
 
 ## 14. Open Questions
 
 | ID | Question | Owner | Status | Decision/Due Date |
 |---|---|---|---|---|
-| OQ-001 | Which payment provider and payment methods will be used for launch? | Product Owner | Open | TBD |
-| OQ-002 | What are the baseline and target values for website traffic, add-to-cart rate, checkout completion rate, and completed online orders? | Product Owner | Open | TBD |
-| OQ-003 | What is the specific target release date and rollout timing? | Product Owner | Open | TBD |
-| OQ-004 | What measurable thresholds and test methods apply for security, privacy, supported devices/viewports, accessibility, and checkout performance? | Product Owner | Open | TBD |
+| OQ-001 | What is the baseline volume of phone-based refill requests and prescription status calls before launch? | Product Owner | Open | TBD |
+| OQ-002 | What is the target release date? | Product Owner | Open | TBD |
+| OQ-003 | What is the baseline refill request review turnaround before launch? | Product Owner | Open | TBD |
+| OQ-004 | What is the active patient population used to measure the 25% registration target? | Product Owner | Open | TBD |
 
 ## 15. Release and Rollout Considerations
 
-- **Target Release:** TBD; see OQ-003
-- **Rollout Approach:** Public launch approach not finalized; see OQ-003
-- **Migration Considerations:** No migration requirements identified; first release is a new ecommerce website.
-- **Training/Support Considerations:** Admin user training is required for catalogue, price, stock status, and order status management.
+- **Target Release:** TBD
+- **Rollout Approach:** Pilot with one pharmacy location or limited patient group, then phased expansion.
+- **Migration Considerations:** Prescription data will be manually entered and updated by staff in the first release; no automated pharmacy management system migration is included.
+- **Training/Support Considerations:** Staff must be trained on account access, refill review, status updates, secure messaging, exception handling, and HIPAA-aligned use of the application.
 
 ## 16. Definition of Product Success
 
 The product is successful when:
 
-- Individual gamers in the United States can browse Dell gaming PCs, Dell gaming laptops, and Dell accessories, add items to cart, and complete online payment in USD.
-- The website presents a consistent dark red Red Witch gaming theme without reducing shopping and checkout usability.
-- Website traffic, add-to-cart rate, checkout completion rate, and completed online orders can be measured against the finalized targets from OQ-002.
-- Admin users can maintain products, prices, stock status, and order status through simple admin capabilities.
+- Phone-based refill requests and prescription status calls are reduced by 25% within 90 days of launch against the established baseline.
+- 90% of refill requests are reviewed by staff within 1 business day.
+- 25% of active patients register within 90 days of launch.
+- Patients can request refills, track prescription status, and securely message the pharmacy.
+- Pharmacists and pharmacy technicians can review refill requests, update statuses, and respond to secure messages.
 - All Must-priority requirements are accepted.
 - Required quality, security, and compliance outcomes are evidenced.
 
