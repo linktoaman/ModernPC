@@ -1,713 +1,753 @@
 # Architecture Requirements Document (ARD)
 
-> Replace all `<PLACEHOLDER>` values. Every material architecture decision or constraint should have a stable ID that feature specifications can reference.
+> Every material architecture decision or constraint has a stable ID that feature specifications can reference.
 
 ## Document Metadata
 
-- **Product/Application:** Modern PC E-commerce Website
-- **Document ID:** ARD-MPC
+- **Product/Application:** Pharmacy Application
+- **Document ID:** ARD-PHARMACY-APP
 - **Version:** 0.1
 - **Status:** Draft
-- **Architecture Owner:** TBD (Engineering Lead)
-- **Contributors:** Product Owner, Product Manager, Engineering Lead, UX/UI Designer, QA Lead, Operations Representative, Payments/Finance Representative
-- **Last Updated:** 2026-11-19
+- **Architecture Owner:** TBD; see ARC-OQ-001
+- **Contributors:** Product Owner TBD, Business Sponsor TBD, Engineering Lead TBD, Security Reviewer TBD
+- **Last Updated:** 2026-11-23
 - **Reference PRD:** `PRD.md`
 
 ---
 
 ## 1. Architecture Summary
 
-Modern PC E-commerce Website will be delivered on a vendor-neutral SaaS e-commerce platform with vendor-managed cloud hosting and minimal owned infrastructure. The SaaS platform will provide the customer storefront, product catalogue display, cart, guest checkout, certified payment gateway integrations, order confirmation, admin operations, and optional common e-commerce feature modules where approved.
+The Pharmacy Application will be a HIPAA-aligned responsive web platform built with a TypeScript stack: React for the frontend, Node.js for a modular monolith backend API, and PostgreSQL for application data. It will serve patients, pharmacists, pharmacy technicians, and administrators through separate role-based experiences.
 
-The external ERP/accounting system is the system of record for products, inventory, orders, and customer/order business records. For MVP, ERP-to-commerce exchange will use controlled manual Excel imports and exports rather than API automation. The SaaS platform will hold the operational storefront copy of catalogue, stock, orders, customers, payment references, and admin activity needed to run the online store.
+The architecture prioritizes secure PHI handling, simple operations for a small healthcare business, and focused first-release workflows: patient account registration, staff account provisioning, refill requests, manual prescription status updates, secure messaging, refill exception routing, and success metric event capture. The system will not integrate with a pharmacy management system in the first release; prescription, refill, and status data will be manually entered and updated by staff.
 
-The architecture prioritizes payment and customer-data security, low operational overhead for a small technology business, and rapid e-commerce capability through SaaS patterns. The main unresolved architectural risks are the undefined SaaS platform, domestic country and compliance obligations, exact payment provider, and unresolved scope for “all common e-commerce features.”
+Production hosting is intentionally provider-neutral until vendor selection, but it must use HIPAA-eligible managed services under a Business Associate Agreement. Authentication will use a managed HIPAA-eligible identity provider. Authorization will be enforced by centralized server-side policy checks using identity-provider roles plus patient-record ownership checks.
 
 ## 2. Architecture Drivers
 
-- PRD-FR-001 — Customers must browse gaming desktop, gaming laptop, and gaming accessory categories.
-- PRD-FR-002 — Customers must search, filter, and sort product listings.
-- PRD-FR-003 — Customers must view product details, images, prices, specifications, and stock status.
-- PRD-FR-004 — Customers must manage cart contents before checkout.
-- PRD-FR-005 — Customers must complete guest checkout without account registration or login.
-- PRD-FR-006 — Online payment must use a third-party provider supporting cards and common domestic payment methods.
-- PRD-FR-007 — Stock status must be shown and checkout must be blocked for out-of-stock products.
-- PRD-FR-008 — Successful payment must produce an order confirmation page and email receipt.
-- PRD-FR-009 — Internal users must manage products, prices, images, stock, and order status through a simple admin interface.
-- PRD-FR-010 — Common e-commerce capabilities must be included once translated into an approved checklist.
-- PRD-FR-011 — Customer account capability remains conditional and must be reconciled with guest-checkout-only architecture.
-- PRD-FR-012 — Promotions and discounts remain conditional until rules are defined.
-- PRD-FR-013 — Customer order tracking remains conditional until scope is defined.
-- PRD-FR-014 — Returns and refunds remain conditional until policy and workflow are defined.
-- PRD-FR-015 — Product reviews and ratings remain conditional until moderation and eligibility rules are defined.
-- PRD-NFR-001 — Payment and customer data must be protected through provider-hosted payment capture, no raw card storage, HTTPS, and restricted admin access.
-- CON-001 — Architecture must balance full common e-commerce ambition with small-business budget, team capacity, and launch timing.
-- CON-002 — MVP must support one domestic country only; exact country is TBD.
-- CON-003 — Payment integration must use a third-party provider; provider is TBD.
-- CON-004 — Launch deadline is not fixed.
-- CON-005 — Applicable domestic legal, tax, privacy, and payment compliance requirements are TBD.
-- CON-006 — “All common e-commerce features” must become a finite approved checklist before implementation completion.
+- PRD-FR-001 — Patients must be able to create accounts and access patient-facing pharmacy features.
+- PRD-FR-002 — Staff accounts must be provisioned by an administrator rather than self-registered.
+- PRD-FR-003 — Patient and staff users require separate role-based experiences.
+- PRD-FR-004 — Patients must be able to submit refill requests through the responsive web application.
+- PRD-FR-005 — Pharmacists and pharmacy technicians must be able to review refill requests and support 1-business-day review measurement.
+- PRD-FR-006 — Patients must be able to view patient-friendly prescription and refill statuses.
+- PRD-FR-007 — Staff must be able to manually update prescription and refill statuses.
+- PRD-FR-008 — Patients and pharmacy staff must exchange secure messages inside the application.
+- PRD-FR-009 — Refill exceptions must be routed to staff and displayed to patients with patient-friendly statuses.
+- PRD-FR-010 — The system must record events needed to measure registration, refill submission, refill review, and status update activity.
+- PRD-NFR-001 — The system must enforce HIPAA-aligned role-based access controls for PHI.
+- PRD-NFR-002 — PHI must be encrypted in transit and at rest.
+- PRD-NFR-003 — The system must maintain audit logs for PHI access.
+- PRD-NFR-004 — Protected areas must require secure authentication and automatic session timeout.
+- PRD-NFR-005 — The responsive web application must meet WCAG 2.1 AA accessibility requirements.
+- PRD-NFR-006 — The system must achieve 99.5% monthly availability after launch.
+- PRD-NFR-007 — Common pages must load within 3 seconds under normal operating conditions.
+- CON-001 — The application must support HIPAA compliance because it is for a healthcare business and handles PHI.
+- CON-002 — Small-business constraints require focused scope and operational simplicity.
+- CON-003 — The first release must be a responsive web application rather than native mobile applications.
+- CON-004 — The first release must use manual staff entry and status updates for prescription data.
+- CON-005 — Payments, insurance adjudication, delivery logistics, and inventory management are excluded from the first release.
+- CON-006 — Target release date is TBD.
 
 ## 3. Architecture Principles
 
-1. Prefer SaaS-native commerce capabilities before custom development to reduce operational burden.
-2. Keep the external ERP/accounting system as the business system of record while using the SaaS platform as the operational storefront.
+1. Protect PHI by default through least privilege, encryption, auditability, and secure managed services.
+2. Prefer managed HIPAA-eligible platform services to reduce operational burden for a small business.
 3. Reuse established repository and platform patterns where appropriate.
 4. Keep presentation, orchestration, domain, integration, and persistence concerns separated.
-5. Avoid handling raw payment credentials; use certified provider-hosted payment capture and platform payment integrations.
-6. Treat customer/order/admin data as confidential and payment tokens/references as restricted by default.
-7. Require measurable reliability, performance, security, and testing gates before production changes.
+5. Design first-release workflows around manual pharmacy operations while preserving future integration boundaries.
+6. Make compliance-sensitive policies, retention, timeout, and notification behavior configurable where final business policy is TBD.
 
 ## 4. System Context
 
 ### 4.1 Actors
 
-- Individual Gamer — Browses categories, searches/filters products, reviews details and stock, manages cart, completes guest checkout, pays online, receives confirmation.
-- Internal Admin User — Uses the SaaS admin interface to manage products, prices, images, stock, order status, imports, and operational review.
-- Product Owner — Approves common e-commerce feature checklist, release exceptions, and unresolved scope decisions.
-- Operations Representative — Prepares catalogue, stock, order, return/refund, and fulfilment data and performs controlled imports/exports.
-- Payments/Finance Representative — Selects payment provider, validates payment settlement, and supports legal/tax/payment compliance decisions.
-- SaaS E-commerce Platform — Hosts storefront, admin, catalogue, cart, checkout, payment integration points, orders, and platform analytics.
-- External ERP/Accounting System — System of record for products, inventory, orders, and customer/order business records.
-- Third-Party Payment Provider — Captures payment using certified SaaS platform gateway integration and returns payment outcome.
-- Email Delivery Capability — Sends order confirmation email receipts after successful payment.
+- Patient — Registers, signs in, submits refill requests, views prescription/refill status, and sends or receives secure messages.
+- Pharmacist — Signs in with provisioned staff access, reviews refill requests, updates statuses, resolves exceptions, and responds to messages.
+- Pharmacy Technician — Signs in with provisioned staff access, triages refill requests, updates allowed statuses, resolves assigned exceptions, and responds to messages.
+- Administrator — Provisions staff accounts and reviews authorized operational or audit information.
+- Managed Identity Provider — Authenticates users and supplies role claims to the application.
+- Email/SMS Notification Provider — Sends non-PHI notifications that prompt users to sign in to view application content.
+- Monitoring and Security Tooling — Receives logs, metrics, traces, security findings, and alerts for operations and compliance review.
 
 ### 4.2 External Systems
 
 | ID | System | Purpose | Interface | Owner |
 |---|---|---|---|---|
-| EXT-001 | SaaS E-commerce Platform | Storefront, catalogue display, cart, guest checkout, admin operations, payment gateway integration, order records, platform analytics | REST/Event/File/Admin UI, vendor-specific | SaaS vendor / Store owner |
-| EXT-002 | External ERP/Accounting System | System of record for product, inventory, order, and customer/order business records | File | Business / Finance or Operations owner |
-| EXT-003 | Third-Party Payment Provider | Provider-hosted payment capture and payment outcome processing | REST/Event via SaaS-certified integration | Payment provider / Payments/Finance Representative |
-| EXT-004 | Email Delivery Capability | Order confirmation email receipt delivery | SaaS-native email or REST/Event provider integration | SaaS vendor or email provider |
-| EXT-005 | Monitoring/Analytics Services | Platform analytics, uptime monitoring, checkout error alerts, payment/order event logs | SaaS dashboard/Event/REST | Store owner / Engineering Lead |
+| EXT-001 | Managed Identity Provider | Authenticate patients, staff, and administrators; issue tokens and role claims | OIDC/OAuth2 | Vendor TBD; see ARC-OQ-002 |
+| EXT-002 | Email/SMS Notification Provider | Send non-PHI user notifications that direct users to sign in | REST/Event | Vendor TBD; see ARC-OQ-003 |
+| EXT-003 | HIPAA-Eligible Hosting Platform | Run application, database, secrets, logs, monitoring, and backups under BAA | Managed Cloud Services | Vendor TBD; see ARC-OQ-004 |
+| EXT-004 | CI/CD and Security Scanning Platform | Build, test, scan, generate SBOM, and deploy application artifacts | Pipeline/API | Engineering Lead TBD; see ARC-OQ-001 |
+| EXT-005 | Observability Platform | Centralize structured logs, metrics, traces, uptime checks, and alerts | Agent/API | Operations Owner TBD; see ARC-OQ-001 |
 
 ## 5. Technology Stack
 
 | Layer | Technology | Version/Constraint | Rationale |
 |---|---|---|---|
-| Frontend | SaaS e-commerce storefront theme and approved custom theme/scripts where required | Platform TBD; vendor-neutral SaaS e-commerce | Provides rapid modern storefront, category pages, search/filter/sort, product detail, cart, checkout, and common commerce capabilities with low infrastructure ownership. |
-| Backend | SaaS e-commerce platform commerce backend and admin capabilities | Platform TBD; certified app/extensions only where possible | Provides catalogue, cart, checkout, order, admin, payment, and operational workflows without custom backend ownership. |
-| Data | External ERP/accounting system as business system of record; SaaS platform operational data store for storefront/order operations | ERP/accounting product TBD; SaaS platform TBD; Excel templates controlled | Aligns with decision that ERP/accounting owns business records while SaaS platform runs online commerce. |
-| Hosting | Vendor-managed cloud/SaaS | Vendor-published SLA plus ARD performance targets | Minimizes infrastructure burden for a small technology business. |
-| Payments | SaaS platform certified payment gateway integrations | Payment provider TBD; must support cards and common domestic methods | Satisfies PRD-FR-006 and PRD-NFR-001 while avoiding raw card handling. |
-| Email | SaaS-native transactional email or approved email provider | Provider TBD | Supports order confirmation email receipts after successful payment. |
-| Observability | Platform analytics, admin audit logs, payment/order event logs, uptime monitoring, checkout error alerts | Tooling TBD | Provides operational visibility without custom full-stack telemetry unless extensions are added. |
-| Custom Code | Theme/custom scripts/connectors/extensions in version control | 80% coverage for custom code; SBOM generated | Enables controlled customization while preserving quality and traceability. |
+| Frontend | React with TypeScript | Exact versions TBD; current supported versions at implementation start | Supports responsive web UI, accessible component patterns, and shared TypeScript models |
+| Backend | Node.js with TypeScript | Exact runtime/framework TBD; current LTS runtime required | Aligns with TypeScript stack and supports modular API development |
+| Data | PostgreSQL | Managed encrypted PostgreSQL service; exact version TBD | Relational data model fits users, prescriptions, refills, messages, audit, and reporting |
+| Hosting | HIPAA-eligible managed cloud services under BAA | Provider TBD; must support encryption, private networking, logging, backup, secrets, and monitoring | Meets HIPAA-aligned hosting needs while avoiding unnecessary infrastructure burden |
+| Authentication | Managed HIPAA-eligible identity provider | OIDC/OAuth2; MFA-ready; role claims for patient, staff, and admin access | Reduces custom authentication risk and supports role-based access |
+| Notifications | Email/SMS notification provider | No PHI permitted in notification payloads | Supports user engagement without exposing sensitive content outside the app |
+| Observability | Centralized logs, metrics, traces, uptime checks, and alerting | Platform TBD | Required for 99.5% availability validation and security event monitoring |
+| CI/CD | Automated build, test, security scan, SBOM, and deployment pipeline | Platform TBD | Enforces quality and security gates before release |
+| Infrastructure | Infrastructure as code | Tool TBD | Reproducible HIPAA-aligned environments and controlled changes |
+| Secrets | Managed secrets service | Provider TBD; rotation support required | Prevents secrets in source control, application images, and CI logs |
 
 ## 6. Logical Architecture
 
 ### 6.1 Components
 
-#### COMP-001 — Customer Storefront
+#### COMP-001 — Responsive Web Frontend
 
-- **Responsibility:** Present category pages, product listing pages, product detail pages, search/filter/sort UI, stock status, cart entry, checkout entry, order confirmation, and approved common e-commerce UI.
-- **Inputs:** Product catalogue, images, prices, stock status, customer navigation/search/filter/sort actions, cart actions.
-- **Outputs:** Rendered storefront pages, cart updates, checkout requests, confirmation page.
-- **Dependencies:** COMP-002, COMP-005, COMP-006, EXT-001.
-- **Repository Area:** `TBD (Engineering Lead)`
+- **Responsibility:** Provide patient, staff, and administrator web experiences with responsive WCAG 2.1 AA compliant UI.
+- **Inputs:** User interactions, authenticated session state, API responses, validation errors.
+- **Outputs:** API requests, user-visible confirmations, patient-friendly statuses, secure messaging views.
+- **Dependencies:** COMP-002, EXT-001.
+- **Repository Area:** `apps/web` (assumption; final repository layout TBD in ARC-OQ-005)
 
-#### COMP-002 — SaaS Commerce Core
+#### COMP-002 — Modular Monolith Backend API
 
-- **Responsibility:** Provide operational catalogue, cart, guest checkout, order management, customer/order records, stock enforcement, payment gateway orchestration, and commerce rules.
-- **Inputs:** Admin updates, Excel imports, storefront actions, payment outcomes, email event triggers.
-- **Outputs:** Product listings/details, cart totals, checkout sessions, orders, payment status, order events.
-- **Dependencies:** EXT-001, EXT-002, EXT-003, EXT-004.
-- **Repository Area:** `SaaS platform configuration; version-controlled documentation path TBD (Engineering Lead)`
+- **Responsibility:** Provide REST APIs and server-side orchestration for identity integration, patient workflows, staff workflows, prescription data, refill requests, messaging, audit logging, and reporting events.
+- **Inputs:** Authenticated API requests, identity-provider token claims, notification requests from domain workflows.
+- **Outputs:** API responses, persisted domain records, audit events, metric events, notification dispatch requests.
+- **Dependencies:** COMP-003, COMP-004, COMP-005, COMP-006, EXT-001, EXT-002.
+- **Repository Area:** `apps/api` (assumption; final repository layout TBD in ARC-OQ-005)
 
-#### COMP-003 — Admin Operations Interface
+#### COMP-003 — Application Database
 
-- **Responsibility:** Allow authorized internal admin users to manage products, prices, images, stock, order status, imports, and platform configuration.
-- **Inputs:** Admin authentication, catalogue/order changes, Excel import files, product images, stock updates.
-- **Outputs:** Updated operational catalogue, stock, order status, audit logs, import validation results.
-- **Dependencies:** COMP-002, COMP-004, EXT-001.
-- **Repository Area:** `SaaS admin; configuration documentation path TBD (Engineering Lead)`
+- **Responsibility:** Store application-owned users/profile links, prescriptions, refill requests, statuses, messages, audit events, and success metric events.
+- **Inputs:** Validated persistence commands from COMP-002.
+- **Outputs:** Transactional query results, reporting data, backup data.
+- **Dependencies:** HIPAA-eligible managed PostgreSQL service from EXT-003.
+- **Repository Area:** `packages/db` (assumption; final repository layout TBD in ARC-OQ-005)
 
-#### COMP-004 — Controlled Excel Import/Export Process
+#### COMP-004 — Identity and Access Module
 
-- **Responsibility:** Move product, inventory, order, and customer/order data between the ERP/accounting system of record and SaaS platform through approved Excel templates, validation, staging tests, production import, and audit logging.
-- **Inputs:** ERP/accounting export files, approved import templates, admin import actions.
-- **Outputs:** Validated SaaS imports, rejected row/error reports, export files for ERP/accounting reconciliation, audit records.
-- **Dependencies:** EXT-001, EXT-002, COMP-003.
-- **Repository Area:** `ops/import-templates/` or TBD (Operations Representative)
+- **Responsibility:** Validate tokens, map identity-provider users to application roles, enforce centralized authorization policies, and support staff provisioning workflows.
+- **Inputs:** OIDC/OAuth2 tokens, role claims, staff provisioning requests, patient-record ownership checks.
+- **Outputs:** Authorization decisions, user/session context, audit events for access decisions.
+- **Dependencies:** EXT-001, COMP-003, COMP-006.
+- **Repository Area:** `apps/api/src/modules/identity` (assumption; final repository layout TBD in ARC-OQ-005)
 
-#### COMP-005 — Payment Integration
+#### COMP-005 — Notification Adapter
 
-- **Responsibility:** Use SaaS-certified gateway integration to initiate payment, delegate payment capture to the provider, receive successful/failed/cancelled/pending outcomes, and update orders.
-- **Inputs:** Checkout session, order amount, customer payment choice, provider callbacks/returns.
-- **Outputs:** Payment status, transaction reference/token, customer-facing payment outcome, order payment state.
-- **Dependencies:** EXT-001, EXT-003, COMP-002.
-- **Repository Area:** `SaaS platform payment configuration; documentation path TBD (Payments/Finance Representative)`
+- **Responsibility:** Send non-PHI email/SMS notifications and enforce payload restrictions before dispatch.
+- **Inputs:** Notification intent events from backend workflows.
+- **Outputs:** Non-PHI notification requests to EXT-002, delivery status records where available.
+- **Dependencies:** EXT-002, COMP-006.
+- **Repository Area:** `apps/api/src/modules/notifications` (assumption; final repository layout TBD in ARC-OQ-005)
 
-#### COMP-006 — Notification Capability
+#### COMP-006 — Audit and Reporting Module
 
-- **Responsibility:** Send order confirmation email receipts after successful payment only.
-- **Inputs:** Successful paid order event, customer email address, item summary, order identifier.
-- **Outputs:** Confirmation email receipt, delivery status or failure event.
-- **Dependencies:** EXT-001, EXT-004, COMP-002.
-- **Repository Area:** `SaaS email template configuration; documentation path TBD (Operations Representative)`
-
-#### COMP-007 — Observability and Audit Capability
-
-- **Responsibility:** Provide platform analytics, admin audit logs, payment/order event logs, uptime monitoring, checkout error alerts, and sensitive-data-safe diagnostics.
-- **Inputs:** Storefront analytics events, admin actions, import events, checkout failures, payment/order events, uptime checks.
-- **Outputs:** Dashboards, audit trails, alerts, incident evidence, KPI measurement support.
-- **Dependencies:** EXT-001, EXT-003, EXT-005.
-- **Repository Area:** `observability/` or TBD (Engineering Lead)
+- **Responsibility:** Capture HIPAA-sensitive audit events and success metric events for KPI measurement and authorized review.
+- **Inputs:** Authentication events, PHI read/write events, refill events, message access events, status updates, admin provisioning events, authorization denials.
+- **Outputs:** Immutable or tamper-evident audit records, metric records, operational reports.
+- **Dependencies:** COMP-003, observability tooling in EXT-005.
+- **Repository Area:** `apps/api/src/modules/audit-reporting` (assumption; final repository layout TBD in ARC-OQ-005)
 
 ### 6.2 Data Flow
 
-1. External ERP/accounting system exports product, price, stock, order, or customer/order data into approved Excel templates.
-2. Internal admin user validates the Excel file in sandbox/staging, resolves import errors, then imports approved records into the SaaS e-commerce platform.
-3. SaaS commerce core stores the operational storefront copy of products, prices, images, categories, stock, orders, customer checkout details, and payment references.
-4. Customer storefront requests catalogue, search/filter/sort results, product details, prices, and stock status from the SaaS commerce core.
-5. Individual gamer adds in-stock items to cart; SaaS commerce core recalculates cart totals and revalidates stock before checkout/payment.
-6. During checkout, the customer enters required checkout data; the SaaS platform creates a checkout session and initiates payment through a certified payment gateway integration.
-7. Third-party payment provider captures payment on provider-hosted/payment-provider-controlled surfaces and returns success, failure, cancellation, or pending status to the SaaS platform.
-8. SaaS commerce core records successful payment status against the order, shows an order confirmation page, and triggers the order confirmation email.
-9. Admin users view and update order status in the SaaS admin interface; controlled exports/imports reconcile relevant order/customer data back to the ERP/accounting system.
-10. Observability and audit capability records analytics, admin actions, import events, payment/order events, uptime status, checkout errors, and alerts.
+1. Patient signs in through EXT-001 and receives an authenticated application session through COMP-001 and COMP-002.
+2. COMP-001 sends patient workflow requests to COMP-002 over encrypted HTTPS.
+3. COMP-004 validates token claims, role permissions, and patient-record ownership for every protected API request.
+4. COMP-002 validates request data, executes domain logic, and persists prescriptions, refill requests, statuses, messages, and event data in COMP-003.
+5. COMP-006 records authentication, PHI access, PHI writes, refill actions, message access, admin provisioning, and authorization denial audit events.
+6. COMP-005 sends only non-PHI notification prompts through EXT-002 when workflows require user notification.
+7. Pharmacists and pharmacy technicians sign in through EXT-001, review refill queues, update statuses, resolve exceptions, and respond to secure messages through COMP-001 and COMP-002.
+8. Observability data from COMP-001, COMP-002, COMP-003, and platform services flows to EXT-005 for monitoring, alerting, and availability/performance validation.
 
 ## 7. Architecture Decisions
 
-### ARD-DEC-001 — Use Vendor-Neutral SaaS E-commerce Platform
+### ARD-DEC-001 — Use TypeScript React, Node.js, and PostgreSQL
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-001, PRD-FR-002, PRD-FR-003, PRD-FR-004, PRD-FR-005, PRD-FR-006, PRD-FR-008, PRD-FR-009, PRD-FR-010, PRD-NFR-001
+- **Related Requirements:** PRD-FR-001, PRD-FR-003, PRD-FR-004, PRD-FR-008, PRD-NFR-005, PRD-NFR-007
 
 **Decision**
 
-Use a vendor-neutral SaaS e-commerce platform for storefront, catalogue, cart, guest checkout, admin operations, payment gateway integrations, order confirmation, and common e-commerce capabilities. The exact platform remains TBD.
+The first release will use React with TypeScript for the responsive frontend, Node.js with TypeScript for the backend API, and PostgreSQL for application data.
 
 **Rationale**
 
-The business is a small technology company and needs broad commerce capability with minimal infrastructure ownership. SaaS reduces hosting, patching, scaling, checkout, payment, and admin implementation burden.
+A TypeScript stack supports shared typing across frontend and backend while PostgreSQL provides strong relational integrity for users, prescriptions, refills, messages, audit events, and reporting events.
 
 **Consequences**
 
-- Faster delivery of core e-commerce features compared with a fully custom build.
-- Platform selection remains an open architecture decision that affects features, extensions, pricing, integrations, and SLAs.
-- Some common e-commerce feature behavior may be constrained by the selected SaaS platform.
+- Enables shared schema and contract tooling across application layers.
+- Requires Node.js operational expertise and PostgreSQL migration discipline.
+- Exact framework and runtime versions remain TBD and must be finalized before implementation.
 
 **Alternatives Considered**
 
-- Custom web application built on a modern full-stack framework — Not selected because it increases operational ownership and implementation scope.
-- Headless commerce with custom frontend — Not selected for MVP because it adds integration and frontend ownership complexity.
-- WordPress/WooCommerce managed hosting — Not selected as a specific target because the user selected vendor-neutral SaaS e-commerce.
+- ASP.NET Core, React, and SQL Server — Not selected because the approved decision is TypeScript stack.
+- Django and PostgreSQL — Not selected because the approved decision is TypeScript stack.
+- Technology-neutral architecture — Not selected because a concrete stack was selected during architecture interview.
 
-### ARD-DEC-002 — Use Vendor-Managed Cloud/SaaS Hosting
+### ARD-DEC-002 — Use HIPAA-Eligible Managed Hosting Under BAA
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-NFR-001
+- **Related Requirements:** PRD-NFR-001, PRD-NFR-002, PRD-NFR-003, PRD-NFR-006, CON-001
 
 **Decision**
 
-Use vendor-managed cloud/SaaS hosting with minimal owned infrastructure.
+Production must run on HIPAA-eligible managed hosting services under a Business Associate Agreement. The specific provider is TBD.
 
 **Rationale**
 
-This reduces operational complexity, infrastructure maintenance, security patching, and scaling effort for a small business.
+Managed HIPAA-eligible services reduce infrastructure burden for a small healthcare business while supporting encryption, monitoring, backup, and audit requirements.
 
 **Consequences**
 
-- Availability and infrastructure controls depend on SaaS vendor capabilities and published SLA.
-- Custom infrastructure as code is not applicable unless custom cloud services are introduced.
+- Vendor selection must verify BAA availability and HIPAA-eligible service coverage.
+- Architecture remains portable at the requirement level until provider selection.
+- Provider-specific IaC modules cannot be finalized until ARC-OQ-004 is resolved.
 
 **Alternatives Considered**
 
-- Single cloud provider with managed app/database/storage/CDN — Not selected because it requires more architecture and operations ownership.
-- Self-managed VPS — Not selected due to higher security and operations burden.
-- On-premises/local hosting — Not selected because it conflicts with minimal infrastructure ownership.
+- Self-managed servers — Not selected because they increase operational and compliance burden.
+- Non-BAA hosting — Not acceptable for PHI workflows.
 
-### ARD-DEC-003 — ERP/Accounting System as Business System of Record
+### ARD-DEC-003 — Use Managed Identity Provider
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-007, PRD-FR-009
+- **Related Requirements:** PRD-FR-001, PRD-FR-002, PRD-FR-003, PRD-NFR-001, PRD-NFR-004
 
 **Decision**
 
-Use the external ERP/accounting system as the business system of record for products, inventory, orders, and customer/order records, while the SaaS e-commerce platform keeps the operational storefront copy required to run commerce.
+Authentication will use a managed HIPAA-eligible identity provider with separate patient, staff, and administrator roles.
 
 **Rationale**
 
-The user selected ERP/accounting as the system of record. The SaaS platform still needs local operational data to show products, enforce stock, support checkout, and manage orders.
+Managed identity reduces custom password and session security risk and supports secure authentication, session controls, and role claims.
 
 **Consequences**
 
-- Data reconciliation is required between ERP/accounting records and SaaS operational data.
-- Manual Excel import/export increases operational risk versus automated integration.
-- Ownership boundaries must be documented to avoid conflicting updates.
+- Application authorization still remains server-side and application-owned.
+- Vendor selection must confirm HIPAA suitability, BAA support, OIDC/OAuth2 support, and session timeout controls.
+- MFA readiness is required, even if all-user MFA is not explicitly mandated by the PRD.
 
 **Alternatives Considered**
 
-- SaaS platform as system of record — Not selected because the user selected external ERP/accounting.
-- Custom relational database as system of record — Not selected because SaaS-first architecture avoids custom persistence ownership.
-- Spreadsheets as system of record — Not selected because Excel is an integration mechanism, not the durable business record.
+- Custom username/password authentication — Not selected because it increases security implementation risk.
+- Existing pharmacy directory/SSO — Not selected because no such dependency is established for the first release.
 
-### ARD-DEC-004 — Use Controlled Manual Excel Import/Export for ERP Integration
+### ARD-DEC-004 — Build a Modular Monolith Backend API
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-001, PRD-FR-007, PRD-FR-009
+- **Related Requirements:** PRD-FR-004, PRD-FR-005, PRD-FR-006, PRD-FR-007, PRD-FR-008, PRD-FR-009, PRD-FR-010
 
 **Decision**
 
-Integrate the SaaS platform and ERP/accounting system through admin-only manual Excel imports/exports using approved templates, validation, audit logging, and staging testing before production import.
+The backend will be a modular monolith with separated modules for identity, patients, prescriptions, refills, messaging, audit, notifications, and reporting.
 
 **Rationale**
 
-The user selected manual Excel import for MVP. Controls are required because catalogue, stock, order, and customer/order data directly affect customer purchase correctness.
+A modular monolith keeps deployment and operations simple for a small business while preserving internal boundaries for future growth or integration.
 
 **Consequences**
 
-- Lower implementation complexity than API integration.
-- Higher risk of stale stock, file errors, manual process delays, and reconciliation issues.
-- Requires clear import templates, validation rules, staging test process, and admin accountability.
+- Single deployable backend simplifies CI/CD, rollback, and observability.
+- Module boundaries must be enforced through code organization and testing.
+- Future service extraction remains possible but is not required for the first release.
 
 **Alternatives Considered**
 
-- Real-time API/webhook integration — Not selected for MVP because the user chose manual Excel import.
-- Scheduled API synchronization — Not selected for MVP because the user chose manual Excel import.
-- Prebuilt connector — Not selected for MVP, but may be reconsidered when platform and ERP products are selected.
+- Microservices from launch — Not selected because they add operational complexity.
+- Serverless functions per workflow — Not selected because cross-cutting HIPAA audit and authorization concerns are simpler in a cohesive backend.
+- Minimal full-stack app without module boundaries — Not selected because it risks mixing domain, security, and persistence concerns.
 
-### ARD-DEC-005 — Use SaaS-Certified Payment Gateway Integrations Only
+### ARD-DEC-005 — Keep Prescription Data Manual in First Release
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-006, PRD-FR-008, PRD-NFR-001
+- **Related Requirements:** PRD-FR-004, PRD-FR-005, PRD-FR-006, PRD-FR-007, PRD-FR-009, CON-004, CON-005
 
 **Decision**
 
-Use the selected SaaS platform’s certified payment gateway integrations only. Payment capture must be provider-hosted/tokenized and must not store raw card data in the website database, platform custom code, exports, imports, or logs.
+The first release will not integrate with a pharmacy management system. Prescription, refill, and status data will be entered and updated manually by staff inside the application.
 
 **Rationale**
 
-This satisfies payment security requirements and avoids custom handling of sensitive payment credentials.
+The PRD explicitly excludes automated pharmacy management system integration and prioritizes a focused digital workflow.
 
 **Consequences**
 
-- Available payment methods depend on the selected SaaS platform and gateway support for the domestic country.
-- Custom payment flows are restricted unless certified by the SaaS platform and payment provider.
+- Application database is the first-release system of record for manually managed prescription and refill workflow data.
+- Staff workflow design must minimize manual data-entry burden.
+- Future integration boundaries should be preserved around prescription and refill modules.
 
 **Alternatives Considered**
 
-- Separate custom checkout extension — Not selected because it increases payment compliance and security risk.
-- External payment portal outside checkout — Not selected because it creates checkout friction and reconciliation complexity.
-- Payment provider TBD without architecture constraint — Not selected because provider-hosted capture and certified gateway use are required by PRD-NFR-001.
+- Pharmacy management system integration before launch — Not selected because it is out of scope.
+- CSV imports — Not selected because the approved PRD specifies manual staff entry and updates.
 
-### ARD-DEC-006 — Disable Customer Accounts and Support Guest Checkout Only
+### ARD-DEC-006 — Use Non-PHI Email/SMS Notifications Only
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-005, PRD-FR-011, PRD-NFR-001
+- **Related Requirements:** PRD-FR-008, PRD-NFR-001, PRD-NFR-002, PRD-NFR-003, CON-001
 
 **Decision**
 
-Disable customer accounts for MVP and support guest checkout only. PRD-FR-011 remains an open product conflict because customer accounts are conditional under “all common e-commerce features.”
+The application may integrate with an email/SMS provider for notifications, but notification payloads must not contain PHI and must direct users to sign in to view sensitive content.
 
 **Rationale**
 
-The PRD confirms guest checkout as the checkout model, and the user explicitly selected disabling customer accounts during the ARD interview.
+Notifications improve engagement while reducing the risk of exposing PHI through external channels.
 
 **Consequences**
 
-- Reduces account security, authentication, and customer profile scope.
-- Conflicts with the conditional customer account requirement and must be tracked as an open architecture/product question.
-- Customer-facing order tracking may require email/order-number lookup or remain unresolved.
+- Notification templates must be reviewed for PHI leakage.
+- Secure message content must remain inside the application.
+- Notification delivery failure must not prevent core workflow completion.
 
 **Alternatives Considered**
 
-- Enable both guest checkout and optional customer accounts — Not selected because the user selected disabling customer accounts.
-- Require accounts for checkout — Not selected because it conflicts with PRD-FR-005.
-- Disable accounts but provide order-status lookup — Not selected as a final decision because customer order tracking scope remains TBD.
+- No external integrations — Not selected because notification prompts are useful for adoption and response workflows.
+- PHI-containing notifications — Not acceptable under the selected HIPAA-aligned posture.
 
-### ARD-DEC-007 — Use Role-Based Admin Accounts with MFA
+### ARD-DEC-007 — Enforce Centralized Server-Side Authorization
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-009, PRD-NFR-001
+- **Related Requirements:** PRD-FR-003, PRD-FR-006, PRD-FR-008, PRD-NFR-001, PRD-NFR-003
 
 **Decision**
 
-Use role-based admin accounts with MFA required for all admin users.
+Authorization will be enforced by centralized server-side policy checks on every protected API request, using identity-provider roles plus patient-record ownership checks.
 
 **Rationale**
 
-Admin users can change products, prices, images, stock, order status, and imports. Strong authentication and least-privilege authorization are required to protect store operations and customer data.
+Frontend route guards are not sufficient for PHI. Centralized backend enforcement ensures consistent access decisions and auditable authorization outcomes.
 
 **Consequences**
 
-- Admin onboarding/offboarding must be managed operationally.
-- Shared admin accounts are prohibited.
-- The chosen SaaS platform must support role-based admin permissions and MFA.
+- All protected APIs must pass through authorization middleware or policy services.
+- Patient users can access only their own PHI.
+- Staff access must be constrained by provisioned roles and logged when PHI is accessed.
 
 **Alternatives Considered**
 
-- Single shared admin account — Not selected because it weakens accountability and auditability.
-- Role-based accounts with MFA optional — Not selected because PRD-NFR-001 prioritizes customer/payment data security.
-- External company SSO — Not selected because it was not chosen and may exceed MVP operational needs.
+- Frontend route guards plus partial backend checks — Not selected because frontend-only controls are bypassable.
+- Database row-level security only — Not selected because application-level role, workflow, and audit context is still required.
 
-### ARD-DEC-008 — Retain Order/Customer Records for 12 Months and Audit Logs for 90 Days
+### ARD-DEC-008 — Enforce Security and Quality Gates in CI/CD
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-NFR-001
+- **Related Requirements:** PRD-NFR-001, PRD-NFR-002, PRD-NFR-003, PRD-NFR-005, PRD-NFR-007
 
 **Decision**
 
-Retain order/customer records for 12 months and audit logs for 90 days unless domestic legal, tax, privacy, or payment rules require a different period.
+Release pipelines must block on critical or high vulnerabilities, secret-detection findings, failing SAST, missing SBOM, failing dependency/license scan, failing build, failing lint, failing type-check, failing required tests, failing accessibility checks, or failing migration checks.
 
 **Rationale**
 
-The user selected this retention baseline. Domestic compliance requirements remain TBD and may override it.
+Automated gates provide repeatable evidence that security, compliance, and quality expectations are met before deployment.
 
 **Consequences**
 
-- Retention must be configured in the SaaS platform where supported or handled by documented operational deletion/export processes.
-- Legal/tax requirements may require longer retention, creating an open architecture question.
+- Builds may be blocked until vulnerabilities or quality defects are remediated or formally risk-accepted through a TBD governance process.
+- CI/CD pipeline configuration becomes part of compliance evidence.
+- Security scanning tools must support SBOM generation and severity-based blocking.
 
 **Alternatives Considered**
 
-- Retain according to domestic legal/tax requirements only — Not selected as the primary policy because the user selected specific periods.
-- Retain indefinitely — Not selected because it increases privacy and data exposure risk.
-- Delete customer records immediately after fulfilment — Not selected because it may break order support and tax/accounting needs.
+- Block only critical vulnerabilities — Not selected because HIPAA-sensitive software needs stronger release controls.
+- Manual QA only — Not selected because it does not provide sufficient repeatability.
 
-### ARD-DEC-009 — Require 99.99% Availability and 1-Second Key Page Load Target
+### ARD-DEC-009 — Use Automated Promotion with Manual Production Approval
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-001, PRD-FR-002, PRD-FR-003, PRD-FR-004, PRD-FR-005, PRD-FR-006, PRD-NFR-001
+- **Related Requirements:** PRD-NFR-006, PRD-NFR-007
 
 **Decision**
 
-Target 99.99% availability and key storefront page loads within 1 second under normal traffic.
+The deployment model will include dev, test, staging, and production environments with automated CI/CD promotion and manual approval before production deployment.
 
 **Rationale**
 
-The user selected aggressive availability and performance targets for the customer storefront.
+Environment separation and manual production approval balance release control with automation for a HIPAA-sensitive small-business application.
 
 **Consequences**
 
-- Platform selection must evaluate published SLA, CDN, checkout reliability, theme performance, and monitoring capability.
-- The 1-second page-load target may constrain theme/app choices and media optimization.
-- The target may be difficult or impossible if the selected SaaS platform’s published SLA is below 99.99%.
+- Staging must be production-like enough to validate deployment, migration, security, accessibility, and performance gates.
+- Production changes must be traceable to approved pipeline runs.
+- Test data handling must avoid unauthorized PHI exposure outside production.
 
 **Alternatives Considered**
 
-- SaaS published SLA and 3-second page load — Not selected because the user selected stricter targets.
-- No measurable targets — Not selected because measurable architecture validation is required.
-- 99.9% availability and 2-second page load — Not selected because the user selected stricter targets.
+- Dev and production only — Not selected because it is insufficient for HIPAA-sensitive validation.
+- Fully automated production deployment — Not selected because manual approval was selected for production control.
 
-### ARD-DEC-010 — Use Controlled SaaS Release Management and Versioned Customization
+### ARD-DEC-010 — Use Backward-Compatible Migrations and Tested Restore
 
 - **Status:** Accepted
-- **Related Requirements:** PRD-FR-009, PRD-NFR-001
+- **Related Requirements:** PRD-NFR-006, PRD-NFR-003
 
 **Decision**
 
-Use separate sandbox/staging and production stores with theme/app preview, manual approval, platform rollback/version restore, version-controlled theme/custom code, documented SaaS configuration changes, and infrastructure as code only if custom cloud services are introduced.
+Production deployments will use blue/green or rolling application rollback with backward-compatible database migrations and tested point-in-time database restore.
 
 **Rationale**
 
-This supports safe changes without overbuilding a custom CI/CD platform for SaaS-first delivery.
+Rollback and restore capabilities are necessary to support availability and protect persisted PHI, audit, and workflow data.
 
 **Consequences**
 
-- SaaS-only settings require disciplined documentation because they may not be fully captured in code.
-- Rollback depends on platform versioning, backups, exports, and app/theme restore capabilities.
+- Database changes must be designed for expand/migrate/contract patterns where needed.
+- Point-in-time restore must be tested before production launch and on a recurring schedule TBD.
+- RPO and RTO targets remain open and must be finalized.
 
 **Alternatives Considered**
 
-- Production-only configuration — Not selected because it creates release risk.
-- Full dev/test/stage/prod with custom CI/CD infrastructure — Not selected because it may exceed MVP complexity.
-- Manual settings with no version control — Not selected because it undermines auditability and rollback.
-
-### ARD-DEC-011 — Apply Security and Quality Gates for Production Deployment
-
-- **Status:** Accepted
-- **Related Requirements:** PRD-NFR-001
-
-**Decision**
-
-Production deployment is blocked unless build/lint checks pass, unit and integration tests pass, high/critical security findings are resolved or formally risk-accepted, and an SBOM is generated for custom code/extensions.
-
-**Rationale**
-
-The PRD prioritizes payment and customer-data security. Quality gates reduce the likelihood of vulnerable or unstable storefront changes.
-
-**Consequences**
-
-- Custom code requires automated testing and scanning in CI.
-- SaaS-only configuration changes require documented manual test evidence where automated testing is not possible.
-
-**Alternatives Considered**
-
-- Build/lint only — Not selected because it does not address security or integration risk.
-- Manual business acceptance only — Not selected because it does not satisfy security/quality controls.
-- Block on any security finding — Not selected because the user selected high/critical blocking threshold.
+- Manual redeploy only — Not selected because it does not address database-change risk.
+- Fix-forward only — Not selected because it is insufficient for production resilience.
 
 ## 8. API and Integration Architecture
 
-### ARD-API-001 — Storefront Commerce Interface
+### ARD-API-001 — Identity Provider Authentication
 
 - **Type:** REST
-- **Operation/Topic:** `Vendor-specific storefront/catalogue/cart/checkout operations`
+- **Operation/Topic:** `OIDC/OAuth2 authorization code flow with application callback endpoints`
+- **Provider:** EXT-001
+- **Consumers:** COMP-001, COMP-002, COMP-004
+- **Authentication:** Managed identity-provider authentication with secure token issuance
+- **Versioning:** Use provider-supported OIDC/OAuth2 standards; pin SDK/API versions where applicable
+
+**Request/Input Contract**
+
+OIDC/OAuth2 authorization, callback, token validation, logout, and session metadata contracts from the selected managed identity provider.
+
+**Response/Output Contract**
+
+ID/access token claims must include stable subject identifier and role or group claims sufficient to map users to patient, staff, or administrator roles.
+
+**Error Handling**
+
+Authentication failures return user-safe errors. Token validation failures deny access, record audit events where applicable, and do not expose token internals.
+
+### ARD-API-002 — Patient Account and Profile API
+
+- **Type:** REST
+- **Operation/Topic:** `POST /api/patient/accounts`, `GET /api/patient/me`
 - **Provider:** COMP-002
 - **Consumers:** COMP-001
-- **Authentication:** Public storefront access with platform-managed session/cart controls; HTTPS required
-- **Versioning:** SaaS vendor API/theme versioning; custom code pins supported API versions where applicable
+- **Authentication:** OIDC/OAuth2 authenticated session; patient role required where applicable
+- **Versioning:** Versioned path or header strategy; initial version `v1` if implemented
 
 **Request/Input Contract**
 
-Customer navigation, search terms, filter selections, sort selections, product identifiers, cart item identifiers, quantities, and checkout session data using the selected SaaS platform’s storefront contracts.
+Patient registration and profile requests include identity-provider subject reference, required patient profile fields TBD in feature specification, and consent/acknowledgement fields where required by policy.
 
 **Response/Output Contract**
 
-Category pages, product results, product detail data, stock status, cart state, checkout state, order confirmation state, and customer-facing validation or error messages.
+Returns patient account/profile metadata required by the UI. PHI is returned only to the authenticated patient owner or authorized staff routes.
 
 **Error Handling**
 
-Show clear no-results, validation, empty-cart, out-of-stock, checkout failure, and retry-safe customer messages. Do not expose internal identifiers, customer records, payment details, or platform diagnostic traces.
+Validation errors return patient-friendly messages. Duplicate account or unauthorized access returns non-enumerating errors. All PHI access and authorization denials are audited.
 
-### ARD-API-002 — Admin Operations Interface
+### ARD-API-003 — Staff Provisioning API
 
 - **Type:** REST
-- **Operation/Topic:** `Vendor-specific admin UI/API operations`
+- **Operation/Topic:** `POST /api/admin/staff`, `PATCH /api/admin/staff/{staffUserId}`
 - **Provider:** COMP-002
-- **Consumers:** COMP-003
-- **Authentication:** Role-based admin authentication with MFA required
-- **Versioning:** SaaS vendor admin API/version policy; custom integrations pin supported versions where applicable
+- **Consumers:** COMP-001 administrator experience
+- **Authentication:** OIDC/OAuth2 authenticated session; administrator role required
+- **Versioning:** Versioned path or header strategy; initial version `v1` if implemented
 
 **Request/Input Contract**
 
-Authenticated admin requests to create/edit/deactivate products, update prices/images/descriptions/specifications/categories/stock, view orders, update order status, configure email templates, and perform imports/exports.
+Staff provisioning request includes staff identity reference, role assignment, status, and administrative metadata required for audit.
 
 **Response/Output Contract**
 
-Updated records, validation messages, audit log entries, import/export results, order views, and configuration status.
+Returns staff account provisioning status and assigned application role metadata.
 
 **Error Handling**
 
-Reject unauthorized access, log admin actions, show safe validation errors, and avoid exposing customer/payment existence details on failed authentication or authorization.
+Unauthorized provisioning attempts are denied and audited. Role assignment validation failures return administrator-safe error messages.
 
-### ARD-API-003 — Certified Payment Gateway Integration
+### ARD-API-004 — Prescription and Status API
 
 - **Type:** REST
-- **Operation/Topic:** `Vendor-certified payment authorization/capture/return/webhook operations`
-- **Provider:** EXT-003
-- **Consumers:** COMP-002, COMP-005
-- **Authentication:** SaaS-certified gateway credentials/secrets managed through platform/payment-provider secret controls
-- **Versioning:** Payment provider and SaaS gateway versioning; provider deprecations tracked operationally
-
-**Request/Input Contract**
-
-Checkout amount, order reference, selected payment method, currency/country configuration, success/cancel/failure return URLs or platform equivalents, and provider-required metadata. Raw card numbers, CVV values, and equivalent sensitive payment credentials must not enter custom store code, exports, imports, or logs.
-
-**Response/Output Contract**
-
-Payment status of successful, failed, cancelled, or pending; transaction reference/token; payment timestamp; provider response code where safe; and gateway reconciliation data.
-
-**Error Handling**
-
-Do not mark orders as paid for failed, cancelled, or pending payments. Payment callbacks/returns must be idempotent by order/payment reference. Retry provider callbacks according to SaaS/provider behavior. Show clear customer-facing payment outcome states.
-
-### ARD-API-004 — Order Confirmation Email Interface
-
-- **Type:** Event
-- **Operation/Topic:** `paid_order_created` or SaaS equivalent
+- **Operation/Topic:** `GET /api/patient/prescriptions`, `POST /api/staff/prescriptions`, `PATCH /api/staff/prescriptions/{prescriptionId}/status`
 - **Provider:** COMP-002
-- **Consumers:** COMP-006, EXT-004
-- **Authentication:** SaaS-native service authentication or provider API credentials managed as secrets
-- **Versioning:** SaaS/email template versioning; template changes documented and approved
+- **Consumers:** COMP-001
+- **Authentication:** Patient role with ownership checks for patient reads; staff role for manual entry and updates
+- **Versioning:** Versioned path or header strategy; initial version `v1` if implemented
 
 **Request/Input Contract**
 
-Successful paid order event containing order identifier, customer email address, item summary, payment success status, and receipt template variables.
+Staff write requests include prescription metadata, patient association, status value, and status reason or note where allowed by policy. Patient reads include authenticated user context only; patient identifiers must not be trusted from the client alone.
 
 **Response/Output Contract**
 
-Email delivery accepted/failed status, timestamp, and provider diagnostic code where available.
+Patient responses include patient-friendly prescription and refill status data. Staff responses include workflow data needed for manual status management.
 
 **Error Handling**
 
-Send confirmation email only for successful payments. Log delivery failures and alert operations when order-confirmation email failures exceed the configured alert threshold, threshold TBD by Engineering Lead.
+Invalid status transitions are rejected with workflow-safe errors. Unauthorized access is denied and audited. Patient responses do not expose internal-only exception details.
 
-### ARD-API-005 — ERP/Accounting Excel Import/Export Interface
+### ARD-API-005 — Refill Request API
 
-- **Type:** File
-- **Operation/Topic:** `Approved Excel templates for products, inventory, orders, and customer/order records`
-- **Provider:** EXT-002 for exports; COMP-003/COMP-004 for imports into SaaS platform
-- **Consumers:** COMP-003, COMP-004, EXT-002
-- **Authentication:** Admin-only upload/download through MFA-protected SaaS admin or approved secure storage if added
-- **Versioning:** Template version in file name and template header; incompatible template changes require release approval
+- **Type:** REST
+- **Operation/Topic:** `POST /api/patient/refill-requests`, `GET /api/staff/refill-requests`, `PATCH /api/staff/refill-requests/{refillRequestId}`
+- **Provider:** COMP-002
+- **Consumers:** COMP-001
+- **Authentication:** Patient role with ownership checks for submissions; staff role for review and updates
+- **Versioning:** Versioned path or header strategy; initial version `v1` if implemented
 
 **Request/Input Contract**
 
-Approved Excel templates containing product identifiers, category, name, description/specifications, image references, price, stock status/quantity, order/customer/order status fields as applicable. Required columns and validation rules are TBD by Operations Representative and Engineering Lead.
+Patient submission includes selected prescription reference and required refill request fields TBD in feature specification. Staff update includes review status, exception status, and resolution metadata where applicable.
 
 **Response/Output Contract**
 
-Import success/failure summary, row-level validation errors, imported record counts, rejected record counts, audit log entry, and reconciliation export where applicable.
+Submission returns confirmation and current patient-friendly status. Staff queue returns refill request details required for review and 1-business-day measurement.
 
 **Error Handling**
 
-Imports must be tested in sandbox/staging before production. Reject malformed templates and invalid rows. Record admin identity, file name, timestamp, template version, and result. Do not import raw card data or sensitive payment credentials.
+Invalid or incomplete submissions are rejected with patient-friendly guidance. Requests requiring manual resolution are routed to staff rather than automatically rejected solely due to exception conditions. Duplicate-submission handling and idempotency keys are TBD in ARC-OQ-006.
+
+### ARD-API-006 — Secure Messaging API
+
+- **Type:** REST
+- **Operation/Topic:** `POST /api/messages`, `GET /api/messages`, `POST /api/messages/{threadId}/replies`
+- **Provider:** COMP-002
+- **Consumers:** COMP-001
+- **Authentication:** Authenticated patient owner or authorized staff role
+- **Versioning:** Versioned path or header strategy; initial version `v1` if implemented
+
+**Request/Input Contract**
+
+Message requests include thread reference where applicable, message body, sender context from authenticated identity, and related patient context resolved server-side.
+
+**Response/Output Contract**
+
+Returns secure message thread metadata and message content only to authorized participants or authorized staff users.
+
+**Error Handling**
+
+Unauthorized message access is denied and audited. Message validation errors return safe guidance. Notification dispatch failures do not fail persisted message creation unless final product policy says otherwise.
+
+### ARD-API-007 — Notification Provider API
+
+- **Type:** REST/Event
+- **Operation/Topic:** `provider-specific send notification operation TBD`
+- **Provider:** EXT-002
+- **Consumers:** COMP-005
+- **Authentication:** Managed API credentials stored in secrets service
+- **Versioning:** Pin provider API version where supported
+
+**Request/Input Contract**
+
+Notification payloads may include recipient contact channel, template ID, and non-PHI generic text only. PHI, prescription names, medication names, diagnosis, message contents, and refill details are prohibited.
+
+**Response/Output Contract**
+
+Provider delivery acknowledgement, message ID, and failure reason where available.
+
+**Error Handling**
+
+Transient provider failures use bounded retries with no duplicate PHI risk because no PHI is sent. Persistent failures are logged and alerted according to operational severity.
+
+### ARD-API-008 — Audit and Reporting API
+
+- **Type:** REST
+- **Operation/Topic:** `GET /api/admin/audit-events`, `GET /api/admin/reports/success-metrics`
+- **Provider:** COMP-002
+- **Consumers:** COMP-001 administrator or authorized staff reporting experience
+- **Authentication:** Administrator or explicitly authorized staff role
+- **Versioning:** Versioned path or header strategy; initial version `v1` if implemented
+
+**Request/Input Contract**
+
+Audit/report requests include date range, event type, and filters allowed by policy. Access to audit logs requires elevated authorization.
+
+**Response/Output Contract**
+
+Returns audit event summaries and KPI-related metrics for patient registrations, refill submissions, refill reviews, and status updates.
+
+**Error Handling**
+
+Unauthorized access is denied and audited. Large result sets must be paginated. Export behavior, if any, is TBD and must preserve PHI restrictions.
 
 ## 9. Data Architecture
 
-### DATA-001 — Product Catalogue
+### DATA-001 — User Identity Link
 
-- **Purpose:** Display gaming desktops, gaming laptops, and gaming accessories with category, name, image, price, description/specifications, and active/deactivated status.
-- **System of Record:** External ERP/accounting system; operational storefront copy in SaaS platform.
-- **Classification:** Public
-- **Retention:** Active while sold; deactivated/archive retention TBD by Product Owner and Operations Representative.
-- **Key Relationships:** Related to categories, product images, inventory records, cart items, order line items, reviews if enabled.
-
-### DATA-002 — Inventory/Stock
-
-- **Purpose:** Show stock status and prevent checkout for unavailable products.
-- **System of Record:** External ERP/accounting system; operational stock copy in SaaS platform.
-- **Classification:** Internal
-- **Retention:** Current operational stock plus import/audit history for 90 days unless compliance requires otherwise.
-- **Key Relationships:** Related to product catalogue, carts, checkout validation, order line items, Excel imports.
-
-### DATA-003 — Cart
-
-- **Purpose:** Hold selected products, quantities, prices, and totals before checkout.
-- **System of Record:** SaaS e-commerce platform operational store/session.
+- **Purpose:** Link managed identity-provider subjects to application users and roles.
+- **System of Record:** EXT-001 for credentials; COMP-003 for application role mapping and profile association.
 - **Classification:** Confidential
-- **Retention:** SaaS platform default cart/session retention; exact retention TBD by selected platform and Product Owner.
-- **Key Relationships:** Related to products, inventory, checkout session, customer checkout details.
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** Related to DATA-002, DATA-003, DATA-007.
 
-### DATA-004 — Order
+### DATA-002 — Patient Profile
 
-- **Purpose:** Record placed orders, item summaries, payment status, order status, and operational fulfilment/admin updates.
-- **System of Record:** External ERP/accounting system for business records; SaaS platform for operational commerce order records.
-- **Classification:** Confidential
-- **Retention:** 12 months for order/customer records unless domestic legal/tax requirements require a different period.
-- **Key Relationships:** Related to customer checkout details, order line items, payment references, email receipts, ERP exports/imports.
-
-### DATA-005 — Customer Checkout Details
-
-- **Purpose:** Capture customer information required to place a domestic order and send confirmation email.
-- **System of Record:** External ERP/accounting system for business records; SaaS platform for operational order/customer records.
-- **Classification:** Confidential
-- **Retention:** 12 months unless domestic legal/tax/privacy requirements require a different period.
-- **Key Relationships:** Related to orders, email receipts, payment references, returns/refunds if enabled, order tracking if enabled.
-
-### DATA-006 — Payment Reference
-
-- **Purpose:** Store non-raw-card transaction identifiers, tokens, status, and reconciliation references from the certified payment gateway.
-- **System of Record:** Payment provider for payment transaction; SaaS platform for order payment reference/status; ERP/accounting for finance reconciliation where applicable.
+- **Purpose:** Represent patient account and patient-specific access context for prescriptions, refills, and messages.
+- **System of Record:** COMP-003 for first release.
 - **Classification:** Restricted
-- **Retention:** 12 months for order/payment reference records unless domestic payment/legal/tax requirements require a different period.
-- **Key Relationships:** Related to order, checkout session, payment provider transaction, refund if enabled.
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** Related to DATA-001, DATA-004, DATA-005, DATA-006, DATA-007.
 
-### DATA-007 — Admin User and Audit Log
+### DATA-003 — Staff Profile and Role Assignment
 
-- **Purpose:** Identify admin users, enforce roles/MFA, and record admin actions including catalogue, stock, order, configuration, and import/export activity.
-- **System of Record:** SaaS platform identity/admin/audit capability or external identity provider if later selected.
+- **Purpose:** Represent provisioned pharmacist, pharmacy technician, and administrator access.
+- **System of Record:** COMP-003 for application role mapping; EXT-001 for identity credentials.
 - **Classification:** Confidential
-- **Retention:** Audit logs retained for 90 days unless domestic legal/security requirements require a different period.
-- **Key Relationships:** Related to product changes, stock changes, order status changes, imports/exports, configuration changes.
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** Related to DATA-001, DATA-004, DATA-005, DATA-006, DATA-007.
 
-### DATA-008 — Review/Rating
+### DATA-004 — Prescription
 
-- **Purpose:** Store product reviews and ratings if approved under PRD-FR-015.
-- **System of Record:** SaaS platform or approved review app/module, TBD.
-- **Classification:** Public for published review content; Confidential for moderation metadata and reviewer identity.
-- **Retention:** TBD by Product Owner and Operations Representative.
-- **Key Relationships:** Related to products, customer/order eligibility if enabled, moderation workflow.
+- **Purpose:** Store manually entered prescription records and patient-friendly status data for first-release workflows.
+- **System of Record:** COMP-003 for first release.
+- **Classification:** Restricted
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** Belongs to DATA-002; updated by DATA-003; related to DATA-005 and DATA-007.
 
-### DATA-009 — Promotion/Discount
+### DATA-005 — Refill Request
 
-- **Purpose:** Store promotion, discount, coupon, or offer configuration if approved under PRD-FR-012.
-- **System of Record:** SaaS platform or approved promotion module, TBD.
-- **Classification:** Internal until published; Public for visible customer offers.
-- **Retention:** TBD by Product Owner and Operations Representative.
-- **Key Relationships:** Related to carts, checkout totals, orders, campaign reporting.
+- **Purpose:** Track patient refill submissions, staff review, timestamps, exception routing, and status.
+- **System of Record:** COMP-003 for first release.
+- **Classification:** Restricted
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** Belongs to DATA-002 and DATA-004; reviewed by DATA-003; produces DATA-008 events.
+
+### DATA-006 — Secure Message
+
+- **Purpose:** Store secure patient-pharmacy message threads and replies inside the application.
+- **System of Record:** COMP-003 for first release.
+- **Classification:** Restricted
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** Associated with DATA-002 and DATA-003; message access produces DATA-007 events.
+
+### DATA-007 — Audit Event
+
+- **Purpose:** Record authentication events, PHI reads, PHI writes, refill actions, message access, admin provisioning, and authorization denials.
+- **System of Record:** COMP-003 and/or immutable audit log store from EXT-003/EXT-005; final implementation TBD.
+- **Classification:** Restricted
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** References DATA-001, DATA-002, DATA-003, DATA-004, DATA-005, and DATA-006 where applicable.
+
+### DATA-008 — Success Metric Event
+
+- **Purpose:** Capture patient account creation, refill submission, refill review, and status update events for KPI measurement.
+- **System of Record:** COMP-003 for first release.
+- **Classification:** Confidential; Restricted if event payload includes PHI references.
+- **Retention:** TBD; configurable retention required; see ARC-OQ-007.
+- **Key Relationships:** Derived from DATA-001, DATA-004, DATA-005, and staff workflow actions.
 
 ### Data Migration
 
-- **Required:** Yes
-- **Approach:** Initial and ongoing product, inventory, order, and customer/order business data movement will use controlled Excel import/export between ERP/accounting and SaaS platform. No legacy website migration is confirmed. Import templates, required columns, validation rules, staging test evidence, and reconciliation process are TBD by Operations Representative and Engineering Lead.
+- **Required:** No automated external-system migration for the first release.
+- **Approach:** Staff will manually enter and update prescription data in the application. Database schema migrations are required for application releases and must be backward-compatible for production rollback. Any future pharmacy management system migration or import remains out of scope for first release.
 
 ## 10. Security Architecture
 
-### ARD-SEC-001 — Payment and Customer Data Protection
+### ARD-SEC-001 — HIPAA-Aligned PHI Protection
 
-- **Related Requirements:** PRD-NFR-001
+- **Related Requirements:** PRD-NFR-001, PRD-NFR-002, PRD-NFR-003, PRD-NFR-004, CON-001
 
 The implementation must:
 
-- Use HTTPS for customer checkout, payment handoff/return, admin pages, and any integrations under store control.
-- Use SaaS-certified payment gateway integrations with provider-hosted/tokenized payment capture.
-- Store only safe payment references/tokens/status values required for order reconciliation.
-- Restrict admin access through role-based admin accounts with MFA required.
-- Keep customer/order/admin data confidential and payment references restricted.
-- Protect Excel imports/exports containing customer/order data as confidential files.
-- Log admin, import/export, payment/order, and security-relevant events without storing raw card data.
+- Enforce least-privilege role-based access for patient, staff, and administrator workflows.
+- Restrict patient access to the authenticated patient’s own PHI.
+- Require staff users to be provisioned before accessing staff workflows.
+- Encrypt PHI in transit and at rest.
+- Record audit events for PHI access and other HIPAA-sensitive workflows.
+- Use HIPAA-eligible hosting and managed services under BAA for production PHI workloads.
+- Require automatic session timeout for protected application areas.
 
 The implementation must not:
 
-- Store raw card numbers, CVV values, or equivalent sensitive payment credentials in the SaaS database, custom code, Excel files, logs, analytics, email, or ERP imports/exports.
-- Use shared admin accounts.
-- Expose whether specific customer or payment records exist during failed authentication or authorization.
-- Send order confirmation emails for failed or cancelled payments.
-- Import unvalidated production Excel files directly without staging/sandbox testing.
+- Expose PHI in unauthenticated routes, client-side-only controls, CI logs, application logs, notification payloads, or non-BAA services.
+- Allow staff self-registration for staff access.
+- Store secrets in source control, application images, frontend code, or plain CI logs.
+
+### ARD-SEC-002 — Centralized Authorization Enforcement
+
+- **Related Requirements:** PRD-FR-003, PRD-FR-006, PRD-FR-008, PRD-NFR-001
+
+The implementation must:
+
+- Apply server-side authorization policy checks on every protected API request.
+- Use identity-provider role claims and application-owned patient-record ownership checks.
+- Audit authorization denials for protected resources.
+- Treat frontend route guards as usability controls only, not as security boundaries.
+
+The implementation must not:
+
+- Trust client-provided patient identifiers without server-side ownership validation.
+- Rely solely on frontend routing or UI hiding to protect staff or PHI workflows.
+
+### ARD-SEC-003 — Secure Notification Boundary
+
+- **Related Requirements:** PRD-FR-008, PRD-NFR-002, PRD-NFR-003
+
+The implementation must:
+
+- Keep secure message content and prescription/refill details inside the authenticated application.
+- Send only non-PHI notification prompts through email/SMS.
+- Review and test notification templates for PHI leakage.
+
+The implementation must not:
+
+- Include prescription names, medication names, diagnosis, refill details, secure message contents, or patient-specific clinical details in email/SMS payloads.
 
 ### Security Controls
 
-- **Authentication:** Public storefront uses platform-managed sessions; admin users require named role-based accounts with MFA; customer accounts are disabled for MVP.
-- **Authorization:** Least-privilege admin roles for catalogue, stock, order, import/export, configuration, and reporting functions; unauthorized users cannot access admin functions.
-- **Secrets Management:** Payment gateway credentials, email provider secrets, and any app/extension secrets must be stored in SaaS/provider secret stores or approved CI secret storage; secrets must not be committed to version control or stored in Excel templates.
-- **Encryption:** HTTPS/TLS for in-transit traffic; SaaS/provider-managed encryption at rest for stored customer/order/admin/payment-reference data; exported Excel files containing confidential data must be stored and transmitted through approved secure channels, channel TBD.
-- **Audit Logging:** Admin actions, authentication events where available, import/export events, payment/order status changes, and configuration changes must be logged. Audit logs retained for 90 days unless compliance requires otherwise.
-- **Dependency/CVE Scanning:** Custom theme code, scripts, connectors, and extensions must be scanned for dependency vulnerabilities; high and critical findings block production unless formally risk-accepted.
-- **SBOM:** Required for custom code, connectors, and extensions; SaaS-only configuration changes document vendor/app inventory instead of generating a custom SBOM.
+- **Authentication:** Managed HIPAA-eligible identity provider using OIDC/OAuth2, secure sessions, automatic timeout, and patient/staff/admin role support.
+- **Authorization:** Centralized backend policy enforcement with role checks, patient-record ownership checks, and audit logging for denials.
+- **Secrets Management:** Managed secrets service with rotation support; no secrets in source control, frontend bundles, application images, or CI logs.
+- **Encryption:** TLS for data in transit; managed encryption at rest for PostgreSQL, backups, logs containing sensitive data, object storage if used, and audit stores.
+- **Audit Logging:** Authentication events, PHI reads, PHI writes, refill actions, message access, admin provisioning, and authorization denials must be logged with user identity, timestamp, action, and relevant resource references.
+- **Dependency/CVE Scanning:** CI/CD must block release on critical or high vulnerabilities, secret-detection findings, failing SAST, missing SBOM, or failing dependency/license scan unless a formal risk acceptance process is defined.
+- **SBOM:** Required for release builds.
 
 ## 11. Reliability, Performance, and Scalability
 
-### ARD-OPS-001 — Storefront Availability
+### ARD-OPS-001 — Monthly Availability
 
-- **Target:** Customer storefront availability target is 99.99%.
-- **Validation Method:** Validate selected SaaS platform published SLA before platform approval; monitor production uptime with external uptime checks; record incidents and compare monthly availability against target.
+- **Target:** 99.5% monthly availability after launch for patient and staff application access.
+- **Validation Method:** Uptime monitoring and monthly availability report covering frontend, backend API, and database-dependent core workflows.
 
-### ARD-OPS-002 — Key Storefront Page Performance
+### ARD-OPS-002 — Page Load Performance
 
-- **Target:** Key storefront pages load within 1 second under normal traffic.
-- **Validation Method:** Run synthetic and browser-based performance tests on home/category/product/cart/checkout entry pages in staging and production; validate after major theme/app/media/import changes.
+- **Target:** Patient account, refill request, prescription status, secure messaging, staff refill review, status update, and staff messaging pages load within 3 seconds under normal operating conditions.
+- **Validation Method:** Synthetic monitoring and pre-release performance tests against staging using representative first-release workflows.
 
-### ARD-OPS-003 — Checkout and Payment Outcome Correctness
+### ARD-OPS-003 — Refill Review Measurement
 
-- **Target:** 100% of successful provider payment outcomes must create paid order status, confirmation page eligibility, and email trigger; failed/cancelled/pending payments must not mark orders as paid.
-- **Validation Method:** Payment sandbox tests for successful, failed, cancelled, and pending flows; verify idempotent callback/return handling and order status transitions before production payment launch.
+- **Target:** 90% of refill requests reviewed by staff within 1 business day.
+- **Validation Method:** Application reporting comparing refill request submission timestamp to first staff review timestamp.
 
-### ARD-OPS-004 — Stock Enforcement
+### ARD-OPS-004 — Backup and Restore
 
-- **Target:** 100% of checkout attempts revalidate stock before payment initiation and block unavailable cart items.
-- **Validation Method:** Integration tests and manual staging tests covering in-stock, out-of-stock, and stock-changed-after-cart scenarios.
+- **Target:** RPO and RTO are TBD; encrypted backups and tested point-in-time restore are required before production launch.
+- **Validation Method:** Restore test in non-production and documented backup/restore evidence; final RPO/RTO tracked in ARC-OQ-008.
 
-### ARD-OPS-005 — Import Reliability
+### ARD-OPS-005 — Scalability for First Release
 
-- **Target:** 100% of production Excel imports use approved templates, validation, audit logging, and prior staging test evidence.
-- **Validation Method:** Import checklist review, audit log inspection, rejected-row reports, and reconciliation sampling after each production import.
-
-### ARD-OPS-006 — Scalability
-
-- **Target:** Scalability must meet SaaS platform limits for expected MVP traffic; exact traffic volume is TBD by Product Owner.
-- **Validation Method:** Review selected SaaS plan limits, payment gateway limits, app/plugin limits, and media/CDN capabilities before launch; capture unresolved traffic assumptions under Open Architecture Questions.
+- **Target:** Capacity target is TBD; architecture must support the pilot rollout and phased expansion described in the PRD without redesign.
+- **Validation Method:** Staging load test using expected pilot workload once active patient population and rollout size are defined in PRD OQ-004 and architecture ARC-OQ-009.
 
 ## 12. Observability
 
-- **Logging:** Capture admin audit logs, import/export logs, payment/order event logs, checkout errors, email delivery failures, and security-relevant events. Logs must not contain raw card numbers, CVV, secrets, or unnecessary customer data.
-- **Metrics:** Track completed paid orders per month for KPI-001, payment success/failure/cancel/pending counts, checkout error counts, product page performance, uptime, import success/failure counts, and email receipt delivery failures where platform supports it.
-- **Tracing:** Use SaaS/provider transaction identifiers for cross-system correlation between order, payment reference, email event, and import/export records. Full custom distributed tracing is not required unless custom backend services are added.
-- **Alerting:** Alert on storefront downtime, checkout/payment errors, elevated failed payment/order events, import failures, and order-confirmation email failures. Exact thresholds are TBD by Engineering Lead and Operations Representative.
-- **Sensitive Data Restrictions:** Observability data must not include raw payment credentials, secrets, CVV values, full card numbers, or confidential Excel file contents. Customer/order data in logs must be minimized and masked where supported.
+- **Logging:** Centralized structured logs for backend, frontend operational events, database/platform events where available, deployment events, and security-relevant application events; logs must avoid PHI unless explicitly required and protected as Restricted data.
+- **Metrics:** Availability, request latency, error rates, page-load performance, authentication failures, authorization denials, refill queue size, refill review times, message activity, notification failures, and CI/CD deployment health.
+- **Tracing:** Distributed or request tracing across frontend-to-backend and backend-to-database workflows where supported, with trace identifiers included in logs and errors.
+- **Alerting:** Alerts for availability breach risk, elevated latency, elevated error rates, failed deployments, backup failures, security scan failures, repeated authorization denials, suspicious authentication patterns, and notification provider failures.
+- **Sensitive Data Restrictions:** PHI must not be logged in plaintext. Logs, traces, metrics, and alerts containing sensitive identifiers must be minimized, access-controlled, encrypted, retained according to policy, and excluded from non-BAA tools.
 
 ## 13. Deployment Architecture
 
-- **Environments:** Separate sandbox/staging and production SaaS stores. Additional local development may be used for custom theme/scripts/connectors. Full dev/test/stage/prod custom infrastructure is not required unless custom cloud services are added.
-- **Deployment Model:** SaaS platform configuration and theme/app changes are tested in sandbox/staging, previewed, manually approved, and promoted to production using platform-supported deployment/versioning mechanisms.
-- **CI/CD:** Custom code uses version control and CI checks for build/lint, unit tests, integration tests where applicable, dependency/CVE scanning, and SBOM generation. SaaS-only configuration changes require documented change records and manual test evidence.
-- **Configuration Management:** Version-control theme/custom code and document SaaS configuration changes. Approved Excel templates are versioned. Payment, email, admin role, and monitoring configurations are documented with owners.
-- **Rollback:** Use platform rollback/version restore for themes/apps/configuration where supported; retain previous approved configuration records and import/export backups sufficient to reverse failed changes. Rollback of imported data requires reconciliation and approved corrective import.
-- **Infrastructure as Code:** Not applicable for SaaS-only platform settings unless custom cloud services are added. If custom services are introduced, IaC tool/standard is TBD by Engineering Lead.
+- **Environments:** Dev, test, staging, and production.
+- **Deployment Model:** Automated CI/CD promotion with manual production approval; blue/green or rolling application rollback depending on selected hosting provider.
+- **CI/CD:** Build, lint, type-check, unit test, integration test, contract test, E2E test, accessibility check, migration check, SAST, dependency/CVE scan, license scan, secret detection, SBOM generation, staging deployment, smoke test, manual production approval, production deployment.
+- **Configuration Management:** Environment-specific configuration managed through infrastructure as code and secure parameter/secrets services; no PHI or secrets in source control.
+- **Rollback:** Application rollback through blue/green or rolling deployment strategy; database rollback through backward-compatible migrations and tested point-in-time restore.
+- **Infrastructure as Code:** Required; specific tool TBD after hosting provider selection in ARC-OQ-004.
 
 ## 14. Testing Architecture
 
@@ -722,74 +762,65 @@ Required test levels:
 
 Minimum quality expectations:
 
-- **Coverage Threshold:** 80% coverage for custom theme code, scripts, connectors, and extensions; documented exceptions permitted for SaaS-only configuration where automated coverage is not applicable.
-- **Blocking Security Severity:** High and critical dependency/CVE or application security findings block production unless formally risk-accepted by the Product Owner, Engineering Lead, and Security Reviewer.
-- **Required Build/Lint Checks:** Build/lint pass, unit tests pass, integration tests pass, payment sandbox tests pass for success/failure/cancel/pending outcomes, Excel import staging test evidence completed, end-to-end purchase journey tested, admin authorization tested, performance target tested, SBOM generated for custom code/extensions.
+- **Coverage Threshold:** 80% unit coverage for backend domain modules.
+- **Blocking Security Severity:** Critical or high vulnerabilities; secret-detection findings; failing SAST; missing SBOM; failing dependency/license scan.
+- **Required Build/Lint Checks:** Passing build, lint, type-check, unit tests, integration tests, contract tests, E2E tests for core workflows, accessibility checks for WCAG 2.1 AA, security tests, performance tests for 3-second page-load target, and database migration checks.
 
 ## 15. Architecture Constraints
 
-- ARC-CON-001 — The solution must use a SaaS e-commerce platform; exact platform remains TBD.
-- ARC-CON-002 — Hosting must be vendor-managed cloud/SaaS with minimal infrastructure ownership.
-- ARC-CON-003 — External ERP/accounting system is the business system of record for products, inventory, orders, and customer/order business records.
-- ARC-CON-004 — ERP/accounting integration must use controlled manual Excel import/export for MVP.
-- ARC-CON-005 — Payment must use SaaS-certified third-party gateway integrations only.
-- ARC-CON-006 — Raw card numbers, CVV values, and equivalent sensitive payment credentials must not be stored in website databases, custom code, logs, imports, exports, analytics, or emails.
-- ARC-CON-007 — Customer accounts are disabled for MVP, while PRD-FR-011 remains an unresolved product conflict.
-- ARC-CON-008 — Admin access must use named role-based accounts with MFA; shared admin accounts are prohibited.
-- ARC-CON-009 — Customer/order records are retained for 12 months and audit logs for 90 days unless domestic compliance requires different periods.
-- ARC-CON-010 — Customer/order/admin data is Confidential; payment tokens/references are Restricted; public catalogue data is Public.
-- ARC-CON-011 — The MVP must support one domestic country only; exact country remains TBD.
-- ARC-CON-012 — Domestic legal, tax, privacy, and payment compliance requirements remain TBD and may override retention, checkout, tax, and payment design.
-- ARC-CON-013 — “All common e-commerce features” must be converted into a finite approved checklist before implementation completion.
-- ARC-CON-014 — Custom code/extensions must meet 80% coverage, build/lint/test gates, high/critical security blocking, and SBOM requirements.
-- ARC-CON-015 — Production changes must be tested in sandbox/staging and approved before release.
+- ARC-CON-001 — Production hosting must use HIPAA-eligible services under a Business Associate Agreement because the application handles PHI.
+- ARC-CON-002 — The first release must remain focused on patient accounts, staff provisioning, refill requests, prescription status, secure messaging, exception routing, and success metric events.
+- ARC-CON-003 — The first release must be a responsive web application and must not include native iOS or Android applications.
+- ARC-CON-004 — Prescription data must be manually entered and updated by staff in the first release.
+- ARC-CON-005 — Automated pharmacy management system integration is out of scope for the first release.
+- ARC-CON-006 — Payments, insurance adjudication, delivery logistics, and inventory management are out of scope for the first release.
+- ARC-CON-007 — The architecture must support WCAG 2.1 AA validation for patient-facing and staff-facing core workflows.
+- ARC-CON-008 — The system must meet 99.5% monthly availability and 3-second common page-load targets after launch.
+- ARC-CON-009 — The target release date is TBD and must not be assumed by architecture planning.
+- ARC-CON-010 — Retention policy is TBD; data retention must be configurable and finalized before production launch.
+- ARC-CON-011 — Notification payloads must not contain PHI.
+- ARC-CON-012 — Infrastructure must be managed as code, and secrets must be stored only in a managed secrets service.
 
 ## 16. Risks and Trade-offs
 
 | ID | Risk/Trade-off | Impact | Mitigation |
 |---|---|---|---|
-| ARC-RISK-001 | SaaS platform remains TBD. | Platform capabilities, costs, SLAs, integrations, data export, and feature modules cannot be finalized. | Evaluate shortlisted SaaS platforms against ARD constraints, payment/country support, admin MFA/RBAC, import/export, feature modules, performance, and SLA. |
-| ARC-RISK-002 | ERP/accounting integration uses manual Excel rather than API automation. | Stock/order/customer data may become stale or incorrect; manual errors can affect purchases. | Use approved templates, validation, staging tests, audit logs, reconciliation, and restricted admin import permissions. |
-| ARC-RISK-003 | 99.99% availability target may exceed selected SaaS platform SLA. | Architecture may fail a user-selected reliability target regardless of implementation quality. | Make published SLA a platform-selection gate; record exceptions before approval if no affordable platform meets target. |
-| ARC-RISK-004 | 1-second key page load target is aggressive for SaaS themes and third-party apps. | Heavy themes, apps, images, or scripts may miss target. | Use performance budget, image optimization, minimal apps, CDN capabilities, synthetic testing, and performance review before release. |
-| ARC-RISK-005 | Customer accounts are disabled while PRD-FR-011 conditionally requires account capability. | Feature mapping and common e-commerce scope remain inconsistent. | Track as Open Architecture Question and require Product Owner decision or release exception. |
-| ARC-RISK-006 | “All common e-commerce features” is not testable. | Scope creep and delayed launch are likely. | Convert to approved checklist with feature specs, owners, acceptance criteria, and release exceptions. |
-| ARC-RISK-007 | Domestic country and compliance requirements are TBD. | Tax, privacy, payment, retention, checkout fields, and receipts may need rework. | Confirm country and compliance obligations before production launch. |
-| ARC-RISK-008 | Payment provider remains TBD. | Supported domestic methods, checkout UX, fees, settlement, refunds, and compliance cannot be finalized. | Select payment provider early and validate certified SaaS integration in sandbox. |
-| ARC-RISK-009 | Data retention decision may conflict with legal/tax requirements. | 12-month order/customer retention or 90-day audit retention may be non-compliant. | Legal/Finance review must confirm or override retention before launch. |
-| ARC-RISK-010 | SaaS configuration may not be fully version-controlled. | Drift, rollback difficulty, and audit gaps can occur. | Document configuration changes, use platform versioning/export features, and maintain release checklists. |
+| ARC-RISK-001 | Hosting provider is TBD, delaying concrete IaC and managed-service design. | Medium | Require HIPAA-eligible services and BAA now; resolve ARC-OQ-004 before implementation planning. |
+| ARC-RISK-002 | Manual prescription data entry creates staff workload and data-quality risk. | Medium | Keep first-release workflows focused, validate inputs, audit updates, and preserve future integration boundaries. |
+| ARC-RISK-003 | HIPAA control implementation is incomplete before launch. | High | Enforce security gates, audit coverage, encryption validation, server-side authorization, and production readiness review. |
+| ARC-RISK-004 | Notification provider accidentally receives PHI. | High | Use non-PHI templates, adapter-level payload restrictions, code review, and tests for notification payloads. |
+| ARC-RISK-005 | Retention, RPO, and RTO are TBD. | Medium | Make retention configurable, require encrypted backups and restore testing, and track final targets as open questions. |
+| ARC-RISK-006 | Modular monolith may grow too large over time. | Low | Maintain module boundaries and contracts; revisit service extraction only when operational need appears. |
+| ARC-RISK-007 | Patient adoption target may be missed if registration friction is high. | Medium | Monitor registration events, keep responsive UX accessible, and use non-PHI notifications where appropriate. |
+| ARC-RISK-008 | 3-second page-load target may be missed under real operating conditions. | Medium | Use synthetic monitoring, performance tests, query optimization, and production metrics. |
 
 ## 17. Open Architecture Questions
 
 | ID | Question | Owner | Status | Decision/Due Date |
 |---|---|---|---|---|
-| ARC-OQ-001 | Which SaaS e-commerce platform and plan tier will be used? | Engineering Lead / Product Owner | Open | TBD |
-| ARC-OQ-002 | Which domestic country is in scope for MVP? | Product Owner | Open | TBD |
-| ARC-OQ-003 | Which third-party payment provider and exact domestic payment methods will be used? | Payments/Finance Representative | Open | TBD |
-| ARC-OQ-004 | What domestic legal, tax, privacy, and payment compliance requirements apply, and do they override the 12-month/90-day retention decision? | Business Sponsor / Legal or Finance Owner | Open | TBD |
-| ARC-OQ-005 | What checkout customer, billing, tax, and delivery fields are required for domestic orders? | Product Owner / Operations Representative | Open | TBD |
-| ARC-OQ-006 | Which exact capabilities are included in the “all common e-commerce features” checklist? | Product Owner | Open | TBD |
-| ARC-OQ-007 | Should PRD-FR-011 customer account capability receive a release exception because customer accounts are disabled for MVP? | Product Owner | Open | TBD |
-| ARC-OQ-008 | What customer-facing order tracking access method is required, if any, without customer accounts? | Product Owner / Operations Representative | Open | TBD |
-| ARC-OQ-009 | What promotion, discount, coupon, or offer rules are required if PRD-FR-012 is implemented? | Product Owner / Operations Representative | Open | TBD |
-| ARC-OQ-010 | What returns/refunds policy, workflow, and payment reversal rules are required if PRD-FR-014 is implemented? | Product Owner / Operations Representative | Open | TBD |
-| ARC-OQ-011 | What product review/rating moderation, eligibility, and display rules are required if PRD-FR-015 is implemented? | Product Owner / Operations Representative | Open | TBD |
-| ARC-OQ-012 | Is a custom PC configurator part of MVP or excluded as non-common e-commerce functionality? | Product Owner | Open | TBD |
-| ARC-OQ-013 | What target value should be used for completed paid orders per month for KPI-001? | Product Owner | Open | TBD |
-| ARC-OQ-014 | What storefront traffic/load assumptions should be used to validate SaaS plan scalability? | Product Owner / Engineering Lead | Open | TBD |
-| ARC-OQ-015 | What exact repository paths will store custom code, configuration documentation, import templates, observability documentation, and release checklists? | Engineering Lead | Open | TBD |
-| ARC-OQ-016 | Who is the named Architecture Owner for this ARD? | Engineering Lead | Open | TBD |
+| ARC-OQ-001 | Who are the named Architecture Owner, Engineering Lead, Security Reviewer, Operations Owner, and Product Owner contributors? | Business Sponsor | Open | TBD |
+| ARC-OQ-002 | Which managed HIPAA-eligible identity provider will be used, and what exact session timeout and MFA policies will be configured? | Architecture Owner | Open | TBD |
+| ARC-OQ-003 | Which email/SMS notification provider will be used, and is it covered by BAA or restricted to non-PHI generic notifications only? | Architecture Owner | Open | TBD |
+| ARC-OQ-004 | Which HIPAA-eligible hosting provider and services will be selected under BAA? | Architecture Owner | Open | TBD |
+| ARC-OQ-005 | What is the final repository layout for frontend, backend, database, shared packages, and infrastructure code? | Engineering Lead | Open | TBD |
+| ARC-OQ-006 | What idempotency and duplicate-submission policy should apply to refill request submission? | Engineering Lead | Open | TBD |
+| ARC-OQ-007 | What final retention policy applies to PHI, refill data, secure messages, audit logs, success metric events, and deactivated accounts? | Security Reviewer | Open | TBD |
+| ARC-OQ-008 | What RPO and RTO targets apply to production database restore, audit log restore, and full service recovery? | Business Sponsor | Open | TBD |
+| ARC-OQ-009 | What pilot workload, active patient population, and phased expansion volume should be used for load testing? | Product Owner | Open | TBD |
+| ARC-OQ-010 | What exact Node.js, React, PostgreSQL, framework, and dependency versions will be standardized for implementation? | Engineering Lead | Open | TBD |
+| ARC-OQ-011 | What formal risk-acceptance process, if any, can override blocking security gates? | Security Reviewer | Open | TBD |
+| ARC-OQ-012 | What audit log storage implementation will be used to provide tamper-evidence or immutability? | Security Reviewer | Open | TBD |
 
 ## 18. Feature Mapping
 
 | Feature | Relevant Components | Decision IDs | Interface IDs | Security IDs |
 |---|---|---|---|---|
-| FEAT-001 | COMP-001, COMP-002, COMP-003, COMP-004 | ARD-DEC-001, ARD-DEC-003, ARD-DEC-004, ARD-DEC-009, ARD-DEC-010, ARD-DEC-011 | ARD-API-001, ARD-API-002, ARD-API-005 | ARD-SEC-001 |
-| FEAT-002 | COMP-001, COMP-002, COMP-005, COMP-007 | ARD-DEC-001, ARD-DEC-005, ARD-DEC-006, ARD-DEC-009, ARD-DEC-011 | ARD-API-001, ARD-API-003 | ARD-SEC-001 |
-| FEAT-003 | COMP-002, COMP-005, COMP-006, COMP-007 | ARD-DEC-001, ARD-DEC-005, ARD-DEC-009, ARD-DEC-011 | ARD-API-003, ARD-API-004 | ARD-SEC-001 |
-| FEAT-004 | COMP-001, COMP-002, COMP-003, COMP-004 | ARD-DEC-003, ARD-DEC-004, ARD-DEC-009, ARD-DEC-010 | ARD-API-001, ARD-API-002, ARD-API-005 | ARD-SEC-001 |
-| FEAT-005 | COMP-002, COMP-003, COMP-004, COMP-007 | ARD-DEC-001, ARD-DEC-003, ARD-DEC-004, ARD-DEC-007, ARD-DEC-008, ARD-DEC-010, ARD-DEC-011 | ARD-API-002, ARD-API-005 | ARD-SEC-001 |
-| FEAT-006 | COMP-001, COMP-002, COMP-003, COMP-005, COMP-006, COMP-007 | ARD-DEC-001, ARD-DEC-005, ARD-DEC-006, ARD-DEC-007, ARD-DEC-008, ARD-DEC-009, ARD-DEC-010, ARD-DEC-011 | ARD-API-001, ARD-API-002, ARD-API-003, ARD-API-004 | ARD-SEC-001 |
+| FEAT-001 | COMP-001, COMP-002, COMP-004, COMP-006 | ARD-DEC-001, ARD-DEC-003, ARD-DEC-004, ARD-DEC-007, ARD-DEC-009 | ARD-API-001, ARD-API-002, ARD-API-003 | ARD-SEC-001, ARD-SEC-002 |
+| FEAT-002 | COMP-001, COMP-002, COMP-003, COMP-006 | ARD-DEC-001, ARD-DEC-004, ARD-DEC-005, ARD-DEC-007 | ARD-API-005, ARD-API-008 | ARD-SEC-001, ARD-SEC-002 |
+| FEAT-003 | COMP-001, COMP-002, COMP-003, COMP-006 | ARD-DEC-001, ARD-DEC-004, ARD-DEC-005, ARD-DEC-007 | ARD-API-004 | ARD-SEC-001, ARD-SEC-002 |
+| FEAT-004 | COMP-001, COMP-002, COMP-003, COMP-005, COMP-006 | ARD-DEC-001, ARD-DEC-004, ARD-DEC-006, ARD-DEC-007 | ARD-API-006, ARD-API-007 | ARD-SEC-001, ARD-SEC-002, ARD-SEC-003 |
+| FEAT-005 | COMP-001, COMP-002, COMP-003, COMP-006 | ARD-DEC-004, ARD-DEC-005, ARD-DEC-007 | ARD-API-004, ARD-API-005 | ARD-SEC-001, ARD-SEC-002 |
+| FEAT-006 | COMP-002, COMP-003, COMP-006 | ARD-DEC-004, ARD-DEC-008, ARD-DEC-009 | ARD-API-008 | ARD-SEC-001 |
 
 ## 19. Approval
 

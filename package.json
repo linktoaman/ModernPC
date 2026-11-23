@@ -1,0 +1,55 @@
+{
+  "name": "pharmacy-two",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PharmacyTwo monorepo workspace for web, API, shared models, and database code.",
+  "type": "module",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22.11.0 <23",
+    "npm": ">=10.9.0 <11"
+  },
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/shared",
+    "packages/db"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint . --max-warnings=0",
+    "type-check": "tsc -b --pretty false",
+    "test": "npm run build && vitest run",
+    "test:unit": "vitest run apps/web/src/app/AppShell.test.tsx packages/db/migrations.test.ts",
+    "test:integration": "npm run build && vitest run apps/api/src/server.test.ts",
+    "db:migrate:validate": "npm run migrate:validate --workspace @pharmacy-two/db",
+    "migration:validate": "npm run db:migrate:validate",
+    "accessibility": "node --eval \"console.log('Accessibility checks placeholder: configure axe or Playwright when UI flows are available.')\"",
+    "security-scan": "npm run security:sast && npm run security:dependency-scan && npm run security:secret-detect && npm run security:license-scan",
+    "security:sast": "node --eval \"console.log('SAST placeholder: configure the selected scanner before CI enforcement.')\"",
+    "sast": "npm run security:sast",
+    "security:dependency-scan": "node --eval \"console.log('Dependency scanning placeholder: configure npm audit, OSV, or SCA tooling before CI enforcement.')\"",
+    "dependency-scan": "npm run security:dependency-scan",
+    "security:secret-detect": "node --eval \"console.log('Secret detection placeholder: configure gitleaks or equivalent before CI enforcement.')\"",
+    "secret-detect": "npm run security:secret-detect",
+    "security:license-scan": "node --eval \"console.log('License scanning placeholder: configure license policy checks before CI enforcement.')\"",
+    "license-scan": "npm run security:license-scan",
+    "security:sbom": "node --eval \"console.log('SBOM generation placeholder: configure CycloneDX or SPDX output before CI enforcement.')\"",
+    "sbom": "npm run security:sbom"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/node": "22.10.2",
+    "@types/react": "19.0.2",
+    "@types/react-dom": "19.0.2",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.1.0",
+    "eslint": "9.39.1",
+    "eslint-plugin-react-hooks": "5.1.0",
+    "jsdom": "25.0.1",
+    "typescript": "5.7.2",
+    "typescript-eslint": "8.18.2",
+    "vite": "6.0.5",
+    "vitest": "2.1.8"
+  }
+}

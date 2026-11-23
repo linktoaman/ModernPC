@@ -1,0 +1,19 @@
+{
+  "name": "@pharmacy-two/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/server.js",
+  "types": "./dist/server.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint . --max-warnings=0",
+    "type-check": "tsc -b --pretty false",
+    "test": "node --eval \"console.log('No API tests configured yet.')\"",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@pharmacy-two/db": "0.1.0",
+    "@pharmacy-two/shared": "0.1.0"
+  }
+}
