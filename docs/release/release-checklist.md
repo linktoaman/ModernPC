@@ -10,11 +10,12 @@
 | Operations approver | Operations Representative |
 | Status | Draft release control |
 | Last updated | 2026-11-20 |
-| Related requirements | REQ-002, REQ-004 |
+| Related requirements | REQ-001, REQ-002, REQ-003, REQ-004, REQ-005, REQ-006 |
 | Related architecture | `docs/ard.md` |
 | Related platform baseline | `docs/platform/saas-platform-baseline.md` |
 | Related rollback plan | `docs/release/rollback-plan.md` |
 | Related change log | `docs/release/configuration-change-log.md` |
+| Related catalogue evidence | `tests/e2e/catalogue.spec.md` |
 
 This checklist controls promotion of SaaS configuration, storefront theme, app/extension, payment, email, analytics, and controlled import changes from sandbox/staging into production. Production changes must be tested in sandbox/staging and approved before release.
 
@@ -52,6 +53,7 @@ Complete the applicable quality gates before requesting production approval.
 |---|---|---|---|
 | Build and lint | Repository-managed custom theme, scripts, apps, or extensions | Build and lint pass, or documented non-applicability when no custom code is included. | TBD |
 | Automated and manual tests | Theme, app/extension, import, payment, checkout, order, analytics, or admin workflow changes | Tests pass in sandbox/staging for affected flows. | TBD |
+| Catalogue and detail evidence | Catalogue, category, search/filter, product detail, cart, checkout, stock, or import changes | `tests/e2e/catalogue.spec.md` is completed in sandbox/staging and confirms Dell-only visibility, required card/detail fields, in-stock add-to-cart, and out-of-stock blocked state. | `tests/e2e/catalogue.spec.md` |
 | Security scan review | Custom code, apps/extensions, third-party app changes, payment/email/analytics configuration | Security scan or review has no unresolved high-risk findings. | TBD |
 | SBOM | Custom code, custom app/extension, or packaged dependency change | SBOM is generated or updated for custom code/extensions and reviewed before release. | TBD |
 | Admin audit review | SaaS configuration, app, staff, payment, import, or policy changes | Admin activity/audit evidence confirms named account usage. | TBD |
@@ -66,6 +68,7 @@ Complete the applicable quality gates before requesting production approval.
 | REL-003 | Evidence masks customer data and never records raw card numbers, CVV, or full payment credentials. | Evidence review note. | TBD |
 | REL-004 | Staging result is linked to the exact release ID and production change-log row. | Link to evidence and change-log reference. | TBD |
 | REL-005 | Any launch exception is approved by Product Owner/Business Sponsor and Engineering Lead. | Exception note with approver, date, scope, and expiry. | TBD |
+| REL-006 | Dell catalogue and detail release evidence is complete when catalogue/product visibility is affected. | Completed `tests/e2e/catalogue.spec.md` with route, non-Dell exclusion, required fields, in-stock add-to-cart, and out-of-stock blocked-state evidence. | TBD |
 
 ## Approval Record
 
