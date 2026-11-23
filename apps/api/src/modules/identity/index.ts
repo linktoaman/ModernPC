@@ -1,4 +1,9 @@
 import type { RequestContext } from '../../middleware/requestContext';
+import {
+  patientAccountOwnershipPolicy,
+  provisionedStaffPolicy,
+  staffProvisioningPolicy
+} from './accessPolicies';
 
 export type PharmacyRole =
   | 'administrator'
@@ -80,7 +85,7 @@ export const patientOwnershipPolicy: PolicyCheck = {
   name: 'patient-ownership',
   evaluate: (context, resource) => {
     if (hasRole(context, staffRoles)) {
-      return { allowed: true };
+      return provisionedStaffPolicy.evaluate(context, resource);
     }
 
     if (
@@ -99,16 +104,7 @@ export const patientOwnershipPolicy: PolicyCheck = {
 
 export const staffRolePolicy: PolicyCheck = {
   name: 'staff-role',
-  evaluate: (context) => {
-    if (hasRole(context, staffRoles)) {
-      return { allowed: true };
-    }
-
-    return {
-      allowed: false,
-      reasonCode: 'staff_role_required'
-    };
-  }
+  evaluate: (context, resource) => provisionedStaffPolicy.evaluate(context, resource)
 };
 
 export const administratorRolePolicy: PolicyCheck = {
@@ -127,6 +123,10 @@ export const administratorRolePolicy: PolicyCheck = {
 
 export const policyChecks = {
   administratorRole: administratorRolePolicy,
+  patientAccountOwnership: patientAccountOwnershipPolicy,
   patientOwnership: patientOwnershipPolicy,
-  staffRole: staffRolePolicy
+  staffProvisioning: staffProvisioningPolicy,
+  staffRole: provisionedStaffPolicy
 } as const;
+
+export * from './accessPolicies';
