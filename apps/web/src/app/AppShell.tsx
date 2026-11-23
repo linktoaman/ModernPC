@@ -5,95 +5,322 @@ import {
   Button,
   Card,
   Dialog,
-  Field,
-  LoadingState,
-  MetricCard,
-  Table,
   Tag,
-  Timeline,
   Toast,
   type ToastMessage,
 } from '../components/ui';
-import { getRouteAreaById, routeAreas, type RouteRole } from '../routes/router';
+import { StaffProvisioningPage } from '../features/admin/StaffProvisioningPage';
+import { PatientAccountPage } from '../features/account/PatientAccountPage';
+import type { PatientRegistrationPayload } from '../features/account/PatientRegistrationForm';
+import { StaffAccessPage } from '../features/staffAccess/StaffAccessPage';
+import {
+  appRoutes,
+  getRouteAreaById,
+  getRouteByPath,
+  publicRoutes,
+  type AppRoute,
+  type AppRouteId,
+  type RouteRole,
+  type StaffRouteRole,
+} from '../routes/router';
+
+type Session =
+  | { readonly status: 'signed-out' }
+  | { readonly status: 'signed-in'; readonly email: string; readonly role: RouteRole };
 
 const initialToasts: readonly ToastMessage[] = [
   {
     id: 'access-reminder',
+    message: 'Protected data loads only after identity and server authorization checks pass.',
     title: 'Access reminder',
-    message: 'Navigation previews do not authorize PHI or administrative actions.',
     tone: 'info',
   },
 ];
 
-const timelineItems = [
-  {
-    id: 'signed-in',
-    title: 'Identity verified',
-    detail: 'OIDC session and role claims are validated before protected data loads.',
-    time: '08:05',
-  },
-  {
-    id: 'workspace-opened',
-    title: 'Workspace opened',
-    detail: 'The shell displays route areas while server authorization remains authoritative.',
-    time: '08:06',
-  },
+const protectedPatientRouteIds: readonly AppRouteId[] = [
+  'patient-status',
+  'patient-refills',
+  'patient-messages',
 ];
 
-const metricCards = [
-  {
-    label: 'Pending verifications',
-    value: '18',
-    detail: 'Across clinical queues',
-    tone: 'warning' as const,
-  },
-  {
-    label: 'Access reviews',
-    value: '4',
-    detail: 'Require administrator approval',
-    tone: 'info' as const,
-  },
-  {
-    label: 'Audit status',
-    value: 'Live',
-    detail: 'PHI events are streamed',
-    tone: 'success' as const,
-  },
-];
+const getInitialRoute = (): AppRoute => {
+  const currentPath = window.location.pathname;
+
+  if (currentPath === '/') {
+    return getRouteByPath('/account');
+  }
+
+  return getRouteByPath(currentPath);
+};
+
+const canViewRoute = (route: AppRoute, session: Session): boolean => {
+  if (route.protection === 'public') {
+    return true;
+  }
+
+  if (session.status === 'signed-out') {
+    return false;
+  }
+
+  if (route.protection === 'patient') {
+    return session.role === 'patient';
+  }
+
+  if (route.protection === 'administrator') {
+    return session.role === 'administrator';
+  }
+
+  return session.role === 'pharmacist' || session.role === 'technician';
+};
+
+const getNavigationRoutes = (session: Session): readonly AppRoute[] => {
+  if (session.status === 'signed-out') {
+    return publicRoutes;
+  }
+
+  if (session.role === 'patient') {
+    return appRoutes.filter(
+      (route) => route.navigationRole === 'patient' || route.id === 'account',
+    );
+  }
+
+  if (session.role === 'administrator') {
+    return appRoutes.filter(
+      (route) => route.navigationRole === 'administrator' || route.id === 'staff-access',
+    );
+  }
+
+  return appRoutes.filter(
+    (route) => route.navigationRole === session.role || route.id === 'staff-access',
+  );
+};
+
+const getNavigationLabel = (session: Session): string => {
+  if (session.status === 'signed-out') {
+    return 'Account access';
+  }
+
+  if (session.role === 'patient') {
+    return 'Patient navigation';
+  }
+
+  if (session.role === 'administrator') {
+    return 'Administrator navigation';
+  }
+
+  return 'Staff navigation';
+};
+
+const getWorkspaceTitle = (session: Session): string => {
+  if (session.status === 'signed-out') {
+    return 'Account access workspace';
+  }
+
+  const area = getRouteAreaById(session.role);
+
+  return `${area.label} workspace`;
+};
 
 export const AppShell = (): JSX.Element => {
-  const [activeRole, setActiveRole] = useState<RouteRole>('pharmacist');
+  const [activeRoute, setActiveRoute] = useState<AppRoute>(getInitialRoute);
+  const [session, setSession] = useState<Session>({ status: 'signed-out' });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [toasts, setToasts] = useState<readonly ToastMessage[]>(initialToasts);
   const mainRef = useRef<HTMLElement | null>(null);
-  const activeArea = getRouteAreaById(activeRole);
+  const navigationRoutes = getNavigationRoutes(session);
+  const workspaceTitle = getWorkspaceTitle(session);
+  const isActiveRouteAllowed = canViewRoute(activeRoute, session);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
   useEffect(() => {
-    const handleHashChange = (): void => {
-      const hashId = window.location.hash.replace('#', '');
-      const routeMatch = routeAreas.find((area) => area.id === hashId);
-
-      if (routeMatch !== undefined) {
-        setActiveRole(routeMatch.id);
-      }
-
+    const handlePopState = (): void => {
+      setActiveRoute(getInitialRoute());
       mainRef.current?.focus();
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
+  const pushToast = (message: Omit<ToastMessage, 'id'>): void => {
+    const id = `${message.title}-${Date.now().toString()}`;
+    setToasts((currentToasts) => [
+      ...currentToasts.slice(-2),
+      {
+        ...message,
+        id,
+      },
+    ]);
+  };
+
+  const navigateTo = (route: AppRoute): void => {
+    setActiveRoute(route);
+    window.history.pushState({}, '', route.path);
+
+    if (!canViewRoute(route, session)) {
+      pushToast({
+        message: 'Sign in with the required role before opening this workspace.',
+        title: 'Access denied',
+        tone: 'danger',
+      });
+    }
+
+    mainRef.current?.focus();
+  };
+
   const toggleTheme = (): void => {
     setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'));
+  };
+
+  const handlePatientAccountCreated = (payload: PatientRegistrationPayload): void => {
+    setSession({
+      email: payload.email,
+      role: 'patient',
+      status: 'signed-in',
+    });
+    pushToast({
+      message: 'Patient account created. Patient navigation is now available.',
+      title: 'Account created',
+      tone: 'success',
+    });
+  };
+
+  const handlePatientSignIn = (email: string): void => {
+    setSession({
+      email,
+      role: 'patient',
+      status: 'signed-in',
+    });
+    pushToast({
+      message: 'Patient sign-in complete. Prescription tools are available.',
+      title: 'Signed in',
+      tone: 'success',
+    });
+  };
+
+  const handleStaffSignIn = (role: StaffRouteRole, email: string): void => {
+    setSession({
+      email,
+      role,
+      status: 'signed-in',
+    });
+    pushToast({
+      message: `${getRouteAreaById(role).label} access confirmed for this prototype session.`,
+      title: 'Staff signed in',
+      tone: 'success',
+    });
+  };
+
+  const handleAccessDenied = (): void => {
+    pushToast({
+      message: 'Staff sign-in requires an administrator-provisioned account.',
+      title: 'Access denied',
+      tone: 'danger',
+    });
+  };
+
+  const handleProvisionStaff = (email: string): void => {
+    pushToast({
+      message: `${email} is queued for administrator provisioning.`,
+      title: 'Provisioning requested',
+      tone: 'success',
+    });
+  };
+
+  const renderProtectedPatientWorkspace = (route: AppRoute): JSX.Element => (
+    <Card className="access-card" title={route.label}>
+      <div className="access-card__tags" aria-label="Protected patient route status">
+        <Tag tone="success">Patient signed in</Tag>
+        <Tag tone="info">Server authorization required</Tag>
+      </div>
+      <p>{route.summary}</p>
+      <Alert title="Prototype data boundary" tone="info">
+        This workspace intentionally avoids PHI. Production data is loaded only after the patient
+        record ownership check succeeds.
+      </Alert>
+    </Card>
+  );
+
+  const renderProtectedStaffWorkspace = (route: AppRoute): JSX.Element => (
+    <Card className="access-card" title={route.label}>
+      <div className="access-card__tags" aria-label="Protected staff route status">
+        <Tag tone="success">Provisioned staff signed in</Tag>
+        <Tag tone="info">
+          {session.status === 'signed-in' ? getRouteAreaById(session.role).label : 'Staff'}
+        </Tag>
+      </div>
+      <p>{route.summary}</p>
+      <Alert title="Minimum necessary access" tone="warning">
+        Staff tools remain role-scoped and every denied server authorization decision is audited.
+      </Alert>
+    </Card>
+  );
+
+  const renderProtectedGuidance = (route: AppRoute): JSX.Element => (
+    <Card className="access-card protected-guidance" title="Sign in required">
+      <div className="access-card__tags" aria-label="Signed out protected guidance">
+        <Tag tone="danger">Signed out</Tag>
+        <Tag tone="warning">Protected route</Tag>
+      </div>
+      <Alert title="Access denied" tone="danger">
+        Non-signed-in users cannot view {route.label.toLowerCase()}. Sign in with the required
+        account before prescription status, refill, messaging, staff, or administrator routes load.
+      </Alert>
+      <div className="role-preview" aria-label="Protected route actions">
+        <Button onClick={() => navigateTo(getRouteByPath('/account'))} variant="primary">
+          Patient sign in
+        </Button>
+        <Button onClick={() => navigateTo(getRouteByPath('/staff/access'))} variant="secondary">
+          Staff sign in
+        </Button>
+      </div>
+    </Card>
+  );
+
+  const renderRoute = (): JSX.Element => {
+    if (!isActiveRouteAllowed) {
+      return renderProtectedGuidance(activeRoute);
+    }
+
+    if (activeRoute.id === 'account') {
+      return (
+        <PatientAccountPage
+          onCreateAccount={handlePatientAccountCreated}
+          onPatientSignIn={handlePatientSignIn}
+        />
+      );
+    }
+
+    if (activeRoute.id === 'staff-access') {
+      return (
+        <StaffAccessPage
+          onAccessDenied={handleAccessDenied}
+          onStaffSignIn={handleStaffSignIn}
+        />
+      );
+    }
+
+    if (activeRoute.id === 'admin-staff') {
+      return (
+        <StaffProvisioningPage
+          isAdministrator={session.status === 'signed-in' && session.role === 'administrator'}
+          onProvisionStaff={handleProvisionStaff}
+        />
+      );
+    }
+
+    if (protectedPatientRouteIds.includes(activeRoute.id)) {
+      return renderProtectedPatientWorkspace(activeRoute);
+    }
+
+    return renderProtectedStaffWorkspace(activeRoute);
   };
 
   return (
@@ -108,10 +335,15 @@ export const AppShell = (): JSX.Element => {
           </span>
           <div>
             <p>PharmacyTwo</p>
-            <h1>Clinical operations workspace</h1>
+            <h1>{workspaceTitle}</h1>
           </div>
         </div>
         <div className="topbar-actions" aria-label="Workspace actions">
+          {session.status === 'signed-in' ? (
+            <Tag tone="success">{session.email}</Tag>
+          ) : (
+            <Tag tone="neutral">Signed out</Tag>
+          )}
           <Button
             aria-pressed={theme === 'dark'}
             onClick={toggleTheme}
@@ -120,24 +352,44 @@ export const AppShell = (): JSX.Element => {
           >
             {theme === 'light' ? 'Dark' : 'Light'}
           </Button>
-          <Button onClick={() => setIsDialogOpen(true)} size="compact" variant="primary">
-            Confirm
+          <Button onClick={() => setIsDialogOpen(true)} size="compact" variant="secondary">
+            Session rules
           </Button>
+          {session.status === 'signed-in' ? (
+            <Button
+              onClick={() => {
+                setSession({ status: 'signed-out' });
+                pushToast({
+                  message: 'Session ended. Protected navigation is hidden.',
+                  title: 'Signed out',
+                  tone: 'info',
+                });
+              }}
+              size="compact"
+              variant="ghost"
+            >
+              Sign out
+            </Button>
+          ) : null}
         </div>
       </header>
 
       <div className="app-layout">
-        <nav className="side-nav" aria-label="Role areas">
-          <p className="side-nav__heading">Route areas</p>
+        <nav className="side-nav" aria-label={getNavigationLabel(session)}>
+          <p className="side-nav__heading">{getNavigationLabel(session)}</p>
           <ul className="side-nav__list">
-            {routeAreas.map((area) => (
-              <li key={area.id}>
+            {navigationRoutes.map((route) => (
+              <li key={route.id}>
                 <a
-                  aria-current={activeRole === area.id ? 'page' : undefined}
-                  href={`#${area.id}`}
-                  onClick={() => setActiveRole(area.id)}
+                  aria-current={activeRoute.id === route.id ? 'page' : undefined}
+                  href={route.path}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateTo(route);
+                  }}
                 >
-                  {area.label}
+                  <span>{route.label}</span>
+                  <small>{route.summary}</small>
                 </a>
               </li>
             ))}
@@ -152,118 +404,29 @@ export const AppShell = (): JSX.Element => {
           tabIndex={-1}
         >
           <h2 className="visually-hidden" id="workspace-title">
-            Shared workspace route areas
+            {workspaceTitle}
           </h2>
-          <div className="workspace-grid workspace-grid--two">
-            <Card title="Role-aware shell">
-              <p>
-                Patient, pharmacist, pharmacy technician, and administrator route areas are visible
-                from the shell. The selected role changes presentation only; protected data and
-                actions still require authenticated server-side authorization.
-              </p>
-              <div className="role-preview" aria-label="Role preview controls">
-                {routeAreas.map((area) => (
-                  <Button
-                    aria-pressed={activeRole === area.id}
-                    key={area.id}
-                    onClick={() => setActiveRole(area.id)}
-                    size="compact"
-                    variant={activeRole === area.id ? 'primary' : 'secondary'}
-                  >
-                    {area.label}
-                  </Button>
-                ))}
-              </div>
-            </Card>
-
-            <Card title={`${activeArea.label} preview`}>
-              <Alert title="Authorization boundary" tone="warning">
-                UI state cannot grant access. This preview points to {activeArea.path}; backend
-                claims, ownership checks, and audit controls decide what loads there.
-              </Alert>
-              <Field
-                description="Example validation state for accessible form primitives."
-                error="Use a non-PHI work queue name."
-                inputProps={{ defaultValue: activeArea.primaryAction }}
-                label="Workspace label"
-              />
-            </Card>
-          </div>
-
-          <div className="workspace-grid">
-            {metricCards.map((metric) => (
-              <MetricCard
-                detail={metric.detail}
-                key={metric.label}
-                label={metric.label}
-                tone={metric.tone}
-                value={metric.value}
-              />
-            ))}
-          </div>
-
-          <div className="workspace-grid workspace-grid--two">
-            <Card title="Route safeguards">
-              <div className="workspace-grid workspace-grid--one">
-                {routeAreas.map((area) => (
-                  <section className="route-card" id={area.id} key={area.id}>
-                    <div className="route-card__header">
-                      <div>
-                        <h3>{area.label}</h3>
-                        <p>{area.summary}</p>
-                      </div>
-                      <Tag tone={activeRole === area.id ? 'success' : 'neutral'}>
-                        {activeRole === area.id ? 'Previewing' : area.path}
-                      </Tag>
-                    </div>
-                    <ul>
-                      {area.safeguards.map((safeguard) => (
-                        <li key={safeguard}>{safeguard}</li>
-                      ))}
-                    </ul>
-                  </section>
-                ))}
-              </div>
-            </Card>
-
-            <Card title="Audit timeline">
-              <Timeline items={timelineItems} />
-              <LoadingState label="Loading medication safety indicators" />
-            </Card>
-          </div>
-
-          <Table
-            caption="Route authorization summary"
-            headers={['Area', 'Path', 'Primary control']}
-            rows={routeAreas.map((area) => [
-              area.label,
-              area.path,
-              area.safeguards[0] ?? 'Server authorization',
-            ])}
-          />
+          {renderRoute()}
         </main>
       </div>
 
       <Dialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        title="Confirm workspace action"
+        title="Session and access rules"
       >
         <p>
-          This confirmation pattern keeps keyboard focus inside the dialog until the action is
-          completed or cancelled.
+          Patient and staff screens model account access only. Backend authorization, identity
+          provider claims, and audit logging remain authoritative for all protected data.
         </p>
         <div className="topbar-actions">
-          <Button onClick={() => setIsDialogOpen(false)} variant="secondary">
-            Cancel
-          </Button>
           <Button onClick={() => setIsDialogOpen(false)} variant="primary">
-            Confirm action
+            Got it
           </Button>
         </div>
       </Dialog>
 
-      <Toast messages={initialToasts} />
+      <Toast messages={toasts} />
     </div>
   );
 };
