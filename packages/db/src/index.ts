@@ -9,14 +9,16 @@ export interface DatabaseConfig {
 export interface MigrationDescriptor {
   readonly id: string;
   readonly description: string;
+  readonly filename: string;
   readonly reversible: boolean;
 }
 
 export const initialMigrations: readonly MigrationDescriptor[] = [
   {
-    id: '2026-11-23-initial-foundation',
-    description: 'Initial PostgreSQL migration placeholder for the PharmacyTwo foundation.',
-    reversible: true
+    id: '0001-foundation',
+    description: 'Initial PostgreSQL schema for PharmacyTwo application-owned records.',
+    filename: '0001_foundation.sql',
+    reversible: false
   }
 ];
 
