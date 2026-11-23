@@ -72,6 +72,34 @@ export const routeAreas: readonly RouteArea[] = [
 export const getRouteAreaById = (id: RouteRole): RouteArea =>
   routeAreas.find((area) => area.id === id) ?? patientRouteArea;
 
+export const staffRouteRoles: readonly StaffRouteRole[] = ['pharmacist', 'technician'];
+
+export const getRouteProtectionLabel = (protection: RouteProtection): string => {
+  if (protection === 'patient') {
+    return getRouteAreaById('patient').label;
+  }
+
+  if (protection === 'administrator') {
+    return getRouteAreaById('administrator').label;
+  }
+
+  if (protection === 'staff') {
+    return 'Provisioned pharmacist or pharmacy technician';
+  }
+
+  return 'Public';
+};
+
+export const getRouteSignInPath = (
+  protection: RouteProtection,
+): '/account' | '/staff/access' => {
+  if (protection === 'patient') {
+    return '/account';
+  }
+
+  return '/staff/access';
+};
+
 export const appRoutes: readonly AppRoute[] = [
   {
     id: 'account',

@@ -12,6 +12,13 @@ import {
 import { StaffProvisioningPage } from '../features/admin/StaffProvisioningPage';
 import { PatientAccountPage } from '../features/account/PatientAccountPage';
 import type { PatientRegistrationPayload } from '../features/account/PatientRegistrationForm';
+import {
+  getRouteAuthorization,
+  ProtectedRoute,
+  type RouteGuardDenial,
+} from '../features/auth/ProtectedRoute';
+import { getSessionTimeoutLabel } from '../features/auth/sessionTimeout';
+import { useSession, type Session } from '../features/auth/useSession';
 import { StaffAccessPage } from '../features/staffAccess/StaffAccessPage';
 import {
   appRoutes,
@@ -20,13 +27,10 @@ import {
   publicRoutes,
   type AppRoute,
   type AppRouteId,
-  type RouteRole,
   type StaffRouteRole,
 } from '../routes/router';
 
-type Session =
-  | { readonly status: 'signed-out' }
-  | { readonly status: 'signed-in'; readonly email: string; readonly role: RouteRole };
+type RouteAccessNotice = Pick<RouteGuardDenial, 'message' | 'reason' | 'title'>;
 
 const initialToasts: readonly ToastMessage[] = [
   {
@@ -43,6 +47,21 @@ const protectedPatientRouteIds: readonly AppRouteId[] = [
   'patient-messages',
 ];
 
+const appendToast = (
+  currentToasts: readonly ToastMessage[],
+  message: Omit<ToastMessage, 'id'>,
+): readonly ToastMessage[] => {
+  const id = `${message.title}-${Date.now().toString()}`;
+
+  return [
+    ...currentToasts.slice(-2),
+    {
+      ...message,
+      id,
+    },
+  ];
+};
+
 const getInitialRoute = (): AppRoute => {
   const currentPath = window.location.pathname;
 
@@ -53,28 +72,8 @@ const getInitialRoute = (): AppRoute => {
   return getRouteByPath(currentPath);
 };
 
-const canViewRoute = (route: AppRoute, session: Session): boolean => {
-  if (route.protection === 'public') {
-    return true;
-  }
-
-  if (session.status === 'signed-out') {
-    return false;
-  }
-
-  if (route.protection === 'patient') {
-    return session.role === 'patient';
-  }
-
-  if (route.protection === 'administrator') {
-    return session.role === 'administrator';
-  }
-
-  return session.role === 'pharmacist' || session.role === 'technician';
-};
-
 const getNavigationRoutes = (session: Session): readonly AppRoute[] => {
-  if (session.status === 'signed-out') {
+  if (session.status !== 'signed-in') {
     return publicRoutes;
   }
 
@@ -96,7 +95,7 @@ const getNavigationRoutes = (session: Session): readonly AppRoute[] => {
 };
 
 const getNavigationLabel = (session: Session): string => {
-  if (session.status === 'signed-out') {
+  if (session.status !== 'signed-in') {
     return 'Account access';
   }
 
@@ -116,21 +115,54 @@ const getWorkspaceTitle = (session: Session): string => {
     return 'Account access workspace';
   }
 
+  if (session.status === 'timed-out') {
+    return 'Session timed out';
+  }
+
   const area = getRouteAreaById(session.role);
 
   return `${area.label} workspace`;
 };
 
+const getSessionStatusTag = (session: Session): JSX.Element => {
+  if (session.status === 'signed-in') {
+    return <Tag tone="success">{session.email}</Tag>;
+  }
+
+  if (session.status === 'timed-out') {
+    return <Tag tone="warning">Session timed out</Tag>;
+  }
+
+  return <Tag tone="neutral">Signed out</Tag>;
+};
+
+const getNoticeTone = (notice: RouteAccessNotice): 'danger' | 'warning' => (
+  notice.reason === 'timed-out' ? 'warning' : 'danger'
+);
+
 export const AppShell = (): JSX.Element => {
   const [activeRoute, setActiveRoute] = useState<AppRoute>(getInitialRoute);
-  const [session, setSession] = useState<Session>({ status: 'signed-out' });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [toasts, setToasts] = useState<readonly ToastMessage[]>(initialToasts);
+  const [routeAccessNotice, setRouteAccessNotice] = useState<RouteAccessNotice | undefined>();
+  const { clearTimedOutSession, session, signIn, signOut } = useSession({
+    onTimeout: () => {
+      setRouteAccessNotice({
+        message: 'For your privacy, your session timed out. Sign in again to continue.',
+        reason: 'timed-out',
+        title: 'Session timed out',
+      });
+      setToasts((currentToasts) => appendToast(currentToasts, {
+        message: 'Protected workspaces are locked until you sign in again.',
+        title: 'Session timed out',
+        tone: 'warning',
+      }));
+    },
+  });
   const mainRef = useRef<HTMLElement | null>(null);
   const navigationRoutes = getNavigationRoutes(session);
   const workspaceTitle = getWorkspaceTitle(session);
-  const isActiveRouteAllowed = canViewRoute(activeRoute, session);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -149,29 +181,71 @@ export const AppShell = (): JSX.Element => {
     };
   }, []);
 
+  useEffect(() => {
+    const authorization = getRouteAuthorization(activeRoute, session);
+
+    if (authorization.allowed || authorization.reason === 'forbidden') {
+      return;
+    }
+
+    const redirectRoute = getRouteByPath(authorization.signInPath);
+    setRouteAccessNotice(authorization);
+
+    if (activeRoute.path !== redirectRoute.path) {
+      setActiveRoute(redirectRoute);
+      window.history.replaceState({}, '', redirectRoute.path);
+      mainRef.current?.focus();
+    }
+  }, [activeRoute, session]);
+
   const pushToast = (message: Omit<ToastMessage, 'id'>): void => {
-    const id = `${message.title}-${Date.now().toString()}`;
-    setToasts((currentToasts) => [
-      ...currentToasts.slice(-2),
-      {
-        ...message,
-        id,
-      },
-    ]);
+    setToasts((currentToasts) => appendToast(currentToasts, message));
+  };
+
+  const navigateToRoute = (route: AppRoute, historyMode: 'push' | 'replace' = 'push'): void => {
+    setActiveRoute(route);
+    setRouteAccessNotice(undefined);
+
+    if (historyMode === 'replace') {
+      window.history.replaceState({}, '', route.path);
+    } else {
+      window.history.pushState({}, '', route.path);
+    }
+
+    mainRef.current?.focus();
+  };
+
+  const navigateToPath = (path: string, historyMode: 'push' | 'replace' = 'push'): void => {
+    navigateToRoute(getRouteByPath(path), historyMode);
   };
 
   const navigateTo = (route: AppRoute): void => {
-    setActiveRoute(route);
-    window.history.pushState({}, '', route.path);
+    const authorization = getRouteAuthorization(route, session);
 
-    if (!canViewRoute(route, session)) {
-      pushToast({
-        message: 'Sign in with the required role before opening this workspace.',
-        title: 'Access denied',
-        tone: 'danger',
-      });
+    if (authorization.allowed) {
+      navigateToRoute(route);
+      return;
     }
 
+    if (authorization.reason === 'unauthenticated' || authorization.reason === 'timed-out') {
+      navigateToPath(authorization.signInPath);
+      setRouteAccessNotice(authorization);
+      pushToast({
+        message: authorization.message,
+        title: authorization.title,
+        tone: getNoticeTone(authorization),
+      });
+      return;
+    }
+
+    setRouteAccessNotice(authorization);
+    setActiveRoute(route);
+    window.history.pushState({}, '', route.path);
+    pushToast({
+      message: authorization.message,
+      title: authorization.title,
+      tone: 'danger',
+    });
     mainRef.current?.focus();
   };
 
@@ -180,11 +254,11 @@ export const AppShell = (): JSX.Element => {
   };
 
   const handlePatientAccountCreated = (payload: PatientRegistrationPayload): void => {
-    setSession({
+    signIn({
       email: payload.email,
       role: 'patient',
-      status: 'signed-in',
     });
+    setRouteAccessNotice(undefined);
     pushToast({
       message: 'Patient account created. Patient navigation is now available.',
       title: 'Account created',
@@ -193,11 +267,11 @@ export const AppShell = (): JSX.Element => {
   };
 
   const handlePatientSignIn = (email: string): void => {
-    setSession({
+    signIn({
       email,
       role: 'patient',
-      status: 'signed-in',
     });
+    setRouteAccessNotice(undefined);
     pushToast({
       message: 'Patient sign-in complete. Prescription tools are available.',
       title: 'Signed in',
@@ -206,11 +280,11 @@ export const AppShell = (): JSX.Element => {
   };
 
   const handleStaffSignIn = (role: StaffRouteRole, email: string): void => {
-    setSession({
+    signIn({
       email,
       role,
-      status: 'signed-in',
     });
+    setRouteAccessNotice(undefined);
     pushToast({
       message: `${getRouteAreaById(role).label} access confirmed for this prototype session.`,
       title: 'Staff signed in',
@@ -232,6 +306,28 @@ export const AppShell = (): JSX.Element => {
       title: 'Provisioning requested',
       tone: 'success',
     });
+  };
+
+  const handleSignOut = (): void => {
+    signOut();
+    setRouteAccessNotice(undefined);
+    pushToast({
+      message: 'Session ended. Protected navigation is hidden.',
+      title: 'Signed out',
+      tone: 'info',
+    });
+  };
+
+  const renderRouteAccessNotice = (): JSX.Element | null => {
+    if (routeAccessNotice === undefined || activeRoute.protection !== 'public') {
+      return null;
+    }
+
+    return (
+      <Alert title={routeAccessNotice.title} tone={getNoticeTone(routeAccessNotice)}>
+        {routeAccessNotice.message}
+      </Alert>
+    );
   };
 
   const renderProtectedPatientWorkspace = (route: AppRoute): JSX.Element => (
@@ -263,64 +359,67 @@ export const AppShell = (): JSX.Element => {
     </Card>
   );
 
-  const renderProtectedGuidance = (route: AppRoute): JSX.Element => (
-    <Card className="access-card protected-guidance" title="Sign in required">
-      <div className="access-card__tags" aria-label="Signed out protected guidance">
-        <Tag tone="danger">Signed out</Tag>
-        <Tag tone="warning">Protected route</Tag>
-      </div>
-      <Alert title="Access denied" tone="danger">
-        Non-signed-in users cannot view {route.label.toLowerCase()}. Sign in with the required
-        account before prescription status, refill, messaging, staff, or administrator routes load.
-      </Alert>
-      <div className="role-preview" aria-label="Protected route actions">
-        <Button onClick={() => navigateTo(getRouteByPath('/account'))} variant="primary">
-          Patient sign in
-        </Button>
-        <Button onClick={() => navigateTo(getRouteByPath('/staff/access'))} variant="secondary">
-          Staff sign in
-        </Button>
-      </div>
-    </Card>
-  );
-
   const renderRoute = (): JSX.Element => {
-    if (!isActiveRouteAllowed) {
-      return renderProtectedGuidance(activeRoute);
-    }
-
     if (activeRoute.id === 'account') {
       return (
-        <PatientAccountPage
-          onCreateAccount={handlePatientAccountCreated}
-          onPatientSignIn={handlePatientSignIn}
-        />
+        <div className="access-page">
+          {renderRouteAccessNotice()}
+          <PatientAccountPage
+            onCreateAccount={handlePatientAccountCreated}
+            onPatientSignIn={handlePatientSignIn}
+          />
+        </div>
       );
     }
 
     if (activeRoute.id === 'staff-access') {
       return (
-        <StaffAccessPage
-          onAccessDenied={handleAccessDenied}
-          onStaffSignIn={handleStaffSignIn}
-        />
+        <div className="access-page">
+          {renderRouteAccessNotice()}
+          <StaffAccessPage
+            onAccessDenied={handleAccessDenied}
+            onStaffSignIn={handleStaffSignIn}
+          />
+        </div>
       );
     }
 
     if (activeRoute.id === 'admin-staff') {
       return (
-        <StaffProvisioningPage
-          isAdministrator={session.status === 'signed-in' && session.role === 'administrator'}
-          onProvisionStaff={handleProvisionStaff}
-        />
+        <ProtectedRoute
+          onNavigateToPath={navigateToPath}
+          route={activeRoute}
+          session={session}
+        >
+          <StaffProvisioningPage
+            isAdministrator={session.status === 'signed-in' && session.role === 'administrator'}
+            onProvisionStaff={handleProvisionStaff}
+          />
+        </ProtectedRoute>
       );
     }
 
     if (protectedPatientRouteIds.includes(activeRoute.id)) {
-      return renderProtectedPatientWorkspace(activeRoute);
+      return (
+        <ProtectedRoute
+          onNavigateToPath={navigateToPath}
+          route={activeRoute}
+          session={session}
+        >
+          {renderProtectedPatientWorkspace(activeRoute)}
+        </ProtectedRoute>
+      );
     }
 
-    return renderProtectedStaffWorkspace(activeRoute);
+    return (
+      <ProtectedRoute
+        onNavigateToPath={navigateToPath}
+        route={activeRoute}
+        session={session}
+      >
+        {renderProtectedStaffWorkspace(activeRoute)}
+      </ProtectedRoute>
+    );
   };
 
   return (
@@ -339,11 +438,7 @@ export const AppShell = (): JSX.Element => {
           </div>
         </div>
         <div className="topbar-actions" aria-label="Workspace actions">
-          {session.status === 'signed-in' ? (
-            <Tag tone="success">{session.email}</Tag>
-          ) : (
-            <Tag tone="neutral">Signed out</Tag>
-          )}
+          {getSessionStatusTag(session)}
           <Button
             aria-pressed={theme === 'dark'}
             onClick={toggleTheme}
@@ -356,19 +451,20 @@ export const AppShell = (): JSX.Element => {
             Session rules
           </Button>
           {session.status === 'signed-in' ? (
+            <Button onClick={handleSignOut} size="compact" variant="ghost">
+              Sign out
+            </Button>
+          ) : null}
+          {session.status === 'timed-out' ? (
             <Button
               onClick={() => {
-                setSession({ status: 'signed-out' });
-                pushToast({
-                  message: 'Session ended. Protected navigation is hidden.',
-                  title: 'Signed out',
-                  tone: 'info',
-                });
+                clearTimedOutSession();
+                navigateToPath('/account');
               }}
               size="compact"
               variant="ghost"
             >
-              Sign out
+              Re-authenticate
             </Button>
           ) : null}
         </div>
@@ -418,6 +514,7 @@ export const AppShell = (): JSX.Element => {
         <p>
           Patient and staff screens model account access only. Backend authorization, identity
           provider claims, and audit logging remain authoritative for all protected data.
+          Authenticated prototype sessions lock after {getSessionTimeoutLabel()} of inactivity.
         </p>
         <div className="topbar-actions">
           <Button onClick={() => setIsDialogOpen(false)} variant="primary">
