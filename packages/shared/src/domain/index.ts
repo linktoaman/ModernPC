@@ -1,3 +1,5 @@
+export * from './access';
+
 export type DataClassification = 'confidential' | 'restricted';
 
 export type UserRole = 'patient' | 'pharmacist' | 'technician' | 'administrator';
