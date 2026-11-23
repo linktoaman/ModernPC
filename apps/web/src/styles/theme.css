@@ -217,10 +217,17 @@ p {
   display: grid;
   min-height: 2.75rem;
   align-content: center;
+  gap: 0.2rem;
   border-radius: 0.35rem;
   color: var(--color-ink);
   padding: 0.65rem 0.75rem;
   text-decoration: none;
+}
+
+.side-nav small {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .side-nav a:hover,
@@ -283,6 +290,87 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+.page-heading h2 {
+  margin-bottom: 0.45rem;
+  font-size: 1.65rem;
+  line-height: 1.2;
+}
+
+.page-heading p:last-child {
+  margin-bottom: 0;
+}
+
+.page-heading__eyebrow {
+  margin-bottom: 0.35rem;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.access-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.access-card {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.access-card h3,
+.access-card p {
+  margin-bottom: 0;
+}
+
+.access-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.access-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.select-field {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 750;
+}
+
+.select-field select {
+  min-height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.35rem;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  padding: 0.65rem 0.75rem;
+}
+
+.rule-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.protected-guidance {
+  max-width: 48rem;
 }
 
 .ui-button {
@@ -595,6 +683,10 @@ p {
   .workspace-grid,
   .workspace-grid--two {
     grid-template-columns: 1fr;
+  }
+
+  .page-heading {
+    flex-direction: column;
   }
 
   .side-nav {

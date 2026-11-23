@@ -10,11 +10,11 @@ import { AppShell } from './AppShell';
 afterEach(() => {
   cleanup();
   document.documentElement.removeAttribute('data-theme');
-  window.location.hash = '';
+  window.history.pushState({}, '', '/');
 });
 
 describe('AppShell', () => {
-  test('renders the workspace shell with accessible landmark navigation', () => {
+  test('renders patient account access with accessible landmark navigation', () => {
     render(<AppShell />);
 
     expect(screen.getByRole('link', { name: 'Skip to workspace' })).toHaveAttribute(
@@ -22,33 +22,79 @@ describe('AppShell', () => {
       '#main-workspace',
     );
     expect(screen.getByRole('banner')).toHaveTextContent('PharmacyTwo');
-    expect(screen.getByRole('navigation', { name: 'Role areas' })).toBeInTheDocument();
-    expect(screen.getByRole('main', { name: 'Shared workspace route areas' })).toHaveAttribute(
+    expect(screen.getByRole('navigation', { name: 'Account access' })).toBeInTheDocument();
+    expect(screen.getByRole('main', { name: 'Account access workspace' })).toHaveAttribute(
       'tabindex',
       '-1',
     );
-    expect(screen.getByRole('table', { name: 'Route authorization summary' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Create account or sign in' })).toBeInTheDocument();
   });
 
-  test('updates active navigation and role preview controls', () => {
+  test('shows patient registration field guidance and does not submit invalid input', () => {
     render(<AppShell />);
 
-    const navigation = screen.getByRole('navigation', { name: 'Role areas' });
-    const administratorLink = within(navigation).getByRole('link', { name: 'Administrator' });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
-    fireEvent.click(administratorLink);
-
-    expect(administratorLink).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText(/This preview points to \/administrator/iu)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: 'Administrator',
-        pressed: true,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Enter your legal first name.')).toBeInTheDocument();
+    expect(screen.getByText('Enter your legal last name.')).toBeInTheDocument();
+    expect(screen.getByText('Enter a valid email address.')).toBeInTheDocument();
+    expect(screen.getByText('Enter your date of birth.')).toBeInTheDocument();
+    expect(screen.getByText('Use at least 8 characters.')).toBeInTheDocument();
+    expect(screen.queryByText('Account created')).not.toBeInTheDocument();
   });
 
-  test('toggles the persisted document theme state', () => {
+  test('shows patient navigation after account creation', () => {
+    render(<AppShell />);
+
+    fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Riley' } });
+    fireEvent.change(screen.getByLabelText('Last name'), { target: { value: 'Nguyen' } });
+    fireEvent.change(screen.getByLabelText('Email', { selector: 'input[name="email"]' }), {
+      target: { value: 'riley@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '1988-04-12' } });
+    fireEvent.change(screen.getByLabelText('Password', { selector: 'input[name="password"]' }), {
+      target: { value: 'secure-pass' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    const navigation = screen.getByRole('navigation', { name: 'Patient navigation' });
+
+    expect(within(navigation).getByRole('link', { name: /Prescription status/iu }))
+      .toBeInTheDocument();
+    expect(within(navigation).getByRole('link', { name: /Refills/iu })).toBeInTheDocument();
+    expect(within(navigation).getByRole('link', { name: /Messages/iu })).toBeInTheDocument();
+    expect(screen.getByText('Account created')).toBeInTheDocument();
+  });
+
+  test('shows staff navigation after provisioned staff sign-in', () => {
+    render(<AppShell />);
+
+    fireEvent.click(screen.getByRole('link', { name: /Staff access/iu }));
+    fireEvent.change(screen.getByLabelText('Staff email'), {
+      target: { value: 'sam@pharmacytwo.test' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'staff-pass' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    const navigation = screen.getByRole('navigation', { name: 'Staff navigation' });
+
+    expect(within(navigation).getByRole('link', { name: /Verification worklist/iu }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Staff signed in')).toBeInTheDocument();
+  });
+
+  test('blocks protected patient routes for signed-out users', () => {
+    window.history.pushState({}, '', '/patient/prescriptions');
+
+    render(<AppShell />);
+
+    expect(screen.getByRole('heading', { name: 'Sign in required' })).toBeInTheDocument();
+    expect(screen.getByText(/Non-signed-in users cannot view prescription status/iu))
+      .toBeInTheDocument();
+    expect(screen.queryByText('Patient signed in')).not.toBeInTheDocument();
+  });
+
+  test('toggles the document theme state', () => {
     render(<AppShell />);
 
     const themeButton = screen.getByRole('button', { name: 'Dark' });
@@ -59,30 +105,5 @@ describe('AppShell', () => {
 
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(screen.getByRole('button', { name: 'Light', pressed: true })).toBeInTheDocument();
-  });
-
-  test('announces the baseline toast', () => {
-    render(<AppShell />);
-
-    expect(screen.getByText('Access reminder')).toBeInTheDocument();
-    expect(
-      screen.getByText('Navigation previews do not authorize PHI or administrative actions.'),
-    ).toBeInTheDocument();
-  });
-
-  test('opens and closes the confirmation dialog with focusable controls', () => {
-    render(<AppShell />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
-
-    const dialog = screen.getByRole('dialog', { name: 'Confirm workspace action' });
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(within(dialog).getByRole('button', { name: 'Close dialog' })).toHaveFocus();
-
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-
-    expect(
-      screen.queryByRole('dialog', { name: 'Confirm workspace action' }),
-    ).not.toBeInTheDocument();
   });
 });

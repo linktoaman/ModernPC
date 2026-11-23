@@ -27,9 +27,9 @@ export const Button = ({
 
 export interface FieldProps {
   readonly label: string;
-  readonly description?: string;
-  readonly error?: string;
-  readonly inputProps?: ComponentPropsWithoutRef<'input'>;
+  readonly description?: string | undefined;
+  readonly error?: string | undefined;
+  readonly inputProps?: ComponentPropsWithoutRef<'input'> | undefined;
 }
 
 export const Field = ({ label, description, error, inputProps }: FieldProps): JSX.Element => {
