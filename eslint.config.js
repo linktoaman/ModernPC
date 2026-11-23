@@ -36,7 +36,9 @@ export default tseslint.config(
         window: 'readonly'
       },
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['packages/db/*.test.ts']
+        },
         tsconfigRootDir: import.meta.dirname
       }
     },
