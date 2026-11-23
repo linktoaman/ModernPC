@@ -1,3 +1,5 @@
+export * from './domain/index';
+
 export type RuntimeEnvironment = 'development' | 'test' | 'staging' | 'production';
 
 export interface HealthStatus {

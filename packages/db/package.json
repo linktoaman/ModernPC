@@ -16,7 +16,7 @@
     "lint": "eslint . --max-warnings=0",
     "type-check": "tsc -b --pretty false",
     "test": "node --eval \"console.log('No database package tests configured yet.')\"",
-    "migrate:validate": "node --eval \"console.log('Database migration validation placeholder: configure migration tooling after schema ownership is finalized.')\""
+    "migrate:validate": "node ./scripts/validate-migrations.mjs"
   },
   "dependencies": {
     "@pharmacy-two/shared": "0.1.0"
